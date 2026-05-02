@@ -1,0 +1,24 @@
+database:
+  path: data/cache/market.db
+data:
+  source: tushare
+  tushare_token: ''
+strategy:
+  default:
+    short_window: 5
+    long_window: 20
+risk:
+  max_position_pct: 0.2
+  max_daily_loss_pct: 0.03
+  stop_loss_pct: 0.08
+  max_holdings: 5
+trading:
+  commission_rate: 0.0001
+  stamp_tax: 0.001
+  slippage: 0.001
+  initial_cash: 100000
+broker:
+  type: sim
+  client: ths
+  exe_path: ''
+  qmt_path: ''

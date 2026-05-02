@@ -1,0 +1,211 @@
+<UserControl x:Class="TradeDashboard.Views.BacktestView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sp="clr-namespace:ScottPlot.WPF;assembly=ScottPlot.WPF"
+             xmlns:c="clr-namespace:TradeDashboard.Converters">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../Resources/Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <c:BoolToVisibilityConverter x:Key="BoolToVis"/>
+            <c:DecimalToColorConverter x:Key="DecToColor"/>
+            <c:DirectionToBrushConverter x:Key="DirToBrush"/>
+            <c:DirectionToTextConverter x:Key="DirToText"/>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="260"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Left: Parameters -->
+        <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,8,0">
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="8">
+                    <TextBlock Text="回测参数" Style="{StaticResource SectionHeaderStyle}"/>
+
+                    <TextBlock Text="代码" Foreground="#a6adc8" Margin="0,8,0,4"/>
+                    <ComboBox ItemsSource="{Binding FavoriteSymbols}"
+                              DisplayMemberPath="DisplayText"
+                              SelectedValuePath="Symbol"
+                              SelectedValue="{Binding Parameters.Symbol, UpdateSourceTrigger=PropertyChanged}"
+                              IsEditable="True"
+                              IsTextSearchEnabled="True"
+                              Text="{Binding Parameters.Symbol, UpdateSourceTrigger=PropertyChanged}"/>
+
+                    <TextBlock Text="开始日期" Foreground="#a6adc8" Margin="0,8,0,4"/>
+                    <DatePicker SelectedDate="{Binding Parameters.StartDate}"/>
+
+                    <TextBlock Text="结束日期" Foreground="#a6adc8" Margin="0,8,0,4"/>
+                    <DatePicker SelectedDate="{Binding Parameters.EndDate}"/>
+
+                    <TextBlock Text="策略" Foreground="#a6adc8" Margin="0,8,0,4"/>
+                    <ComboBox ItemsSource="{Binding AvailableStrategies}" SelectedItem="{Binding Parameters.Strategy}"/>
+
+                    <TextBlock Text="短周期均线" Foreground="#a6adc8" Margin="0,8,0,4"/>
+                    <TextBox Text="{Binding Parameters.ShortWindow}"/>
+
+                    <TextBlock Text="长周期均线" Foreground="#a6adc8" Margin="0,8,0,4"/>
+                    <TextBox Text="{Binding Parameters.LongWindow}"/>
+
+                    <TextBlock Text="初始资金" Foreground="#a6adc8" Margin="0,8,0,4"/>
+                    <TextBox Text="{Binding Parameters.InitialCash}"/>
+
+                    <Button Content="运行回测"
+                            Command="{Binding RunBacktestCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Margin="0,16,0,0" Height="36"/>
+
+                    <ProgressBar IsIndeterminate="{Binding IsRunning}"
+                                 Visibility="{Binding IsRunning, Converter={StaticResource BoolToVis}}"
+                                 Margin="0,8,0,0"/>
+
+                    <TextBlock Text="{Binding ProgressText}" Foreground="#a6adc8" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- Right: Results -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Result Summary Cards -->
+            <StackPanel Grid.Row="0" Margin="0,0,0,8">
+                <!-- Row 1: Core Metrics -->
+                <UniformGrid Columns="4" Margin="0,0,0,4">
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,4,0">
+                        <StackPanel>
+                            <TextBlock Text="盈亏" Style="{StaticResource CardTitleStyle}"/>
+                            <TextBlock Text="{Binding ResultPnl, StringFormat='{}{0:+#,##0.00;-#,##0.00;0.00}'}"
+                                       Foreground="{Binding ResultPnl, Converter={StaticResource DecToColor}}"
+                                       FontSize="20" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}" Margin="4,0">
+                        <StackPanel>
+                            <TextBlock Text="年化收益率" Style="{StaticResource CardTitleStyle}"/>
+                            <TextBlock Text="{Binding ResultAnnualReturnPct, StringFormat='{}{0:+0.00;-0.00;0.00}%'}"
+                                       Foreground="{Binding ResultAnnualReturnPct, Converter={StaticResource DecToColor}}"
+                                       FontSize="20" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}" Margin="4,0">
+                        <StackPanel>
+                            <TextBlock Text="夏普比率" Style="{StaticResource CardTitleStyle}"/>
+                            <TextBlock Text="{Binding ResultSharpeRatio, StringFormat='{}{0:F2}'}"
+                                       Foreground="#89b4fa" FontSize="20" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}" Margin="4,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="最大回撤" Style="{StaticResource CardTitleStyle}"/>
+                            <TextBlock Text="{Binding ResultMaxDD, StringFormat='{}{0:F2}%'}" Foreground="#ef5350" FontSize="20" FontWeight="Bold"/>
+                            <TextBlock Text="{Binding ResultDrawdownPeriod}" Foreground="#6c7086" FontSize="10" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+                <UniformGrid Columns="4" Margin="0,4,0,0">
+                    <Border Style="{StaticResource CardStyle}" Margin="0,0,4,0">
+                        <StackPanel>
+                            <TextBlock Text="胜率" Style="{StaticResource CardTitleStyle}"/>
+                            <TextBlock Text="{Binding ResultWinRate, StringFormat='{}{0:F1}%'}"
+                                       Foreground="{Binding ResultWinRate, Converter={StaticResource DecToColor}}"
+                                       FontSize="18" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}" Margin="4,0">
+                        <StackPanel>
+                            <TextBlock Text="盈亏比" Style="{StaticResource CardTitleStyle}"/>
+                            <TextBlock Text="{Binding ResultProfitLossRatio, StringFormat='{}{0:F2}'}"
+                                       Foreground="#89b4fa" FontSize="18" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}" Margin="4,0">
+                        <StackPanel>
+                            <TextBlock Text="年化波动率" Style="{StaticResource CardTitleStyle}"/>
+                            <TextBlock Text="{Binding ResultVolatilityPct, StringFormat='{}{0:F2}%'}"
+                                       Foreground="#fab387" FontSize="18" FontWeight="Bold"/>
+                        </StackPanel>
+                    </Border>
+                    <Border Style="{StaticResource CardStyle}" Margin="4,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="交易次数" Style="{StaticResource CardTitleStyle}"/>
+                            <TextBlock Text="{Binding ResultTradeCount}" FontSize="18" FontWeight="Bold" Foreground="#cdd6f4"/>
+                        </StackPanel>
+                    </Border>
+                </UniformGrid>
+            </StackPanel>
+
+            <!-- Tab: Chart | Trades -->
+            <TabControl Grid.Row="1">
+                <TabItem Header="资金曲线">
+                    <Border Style="{StaticResource CardStyle}">
+                        <sp:WpfPlot x:Name="EquityPlot" Background="#1a1a2e"/>
+                    </Border>
+                </TabItem>
+                <TabItem Header="交易列表">
+                    <Border Style="{StaticResource CardStyle}">
+                        <DataGrid ItemsSource="{Binding ResultTrades}" ColumnWidth="*">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="日期" Binding="{Binding TradeDate, StringFormat='{}{0:yyyy-MM-dd}'}" Width="90">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="Margin" Value="6,3"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="代码" Binding="{Binding Symbol}" Width="80">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="TextAlignment" Value="Center"/>
+                                            <Setter Property="Margin" Value="6,3"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTemplateColumn Header="方向" Width="60">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Direction, Converter={StaticResource DirToText}}"
+                                                       Foreground="{Binding Direction, Converter={StaticResource DirToBrush}}"
+                                                       FontWeight="Bold" TextAlignment="Center" Margin="6,3"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTextColumn Header="价格" Binding="{Binding Price, StringFormat='{}{0:N2}'}" Width="80">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="TextAlignment" Value="Right"/>
+                                            <Setter Property="Margin" Value="6,3"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="数量" Binding="{Binding Volume, StringFormat='{}{0:N0}'}" Width="70">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="TextAlignment" Value="Right"/>
+                                            <Setter Property="Margin" Value="6,3"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="原因" Binding="{Binding Reason}" Width="*">
+                                    <DataGridTextColumn.ElementStyle>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Margin" Value="6,3"/>
+                                        </Style>
+                                    </DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+                </TabItem>
+            </TabControl>
+        </Grid>
+    </Grid>
+</UserControl>
