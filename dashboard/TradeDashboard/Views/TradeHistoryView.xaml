@@ -20,9 +20,9 @@
 
         <!-- Filter Bar -->
         <WrapPanel Grid.Row="0" Margin="0,0,0,12" ItemHeight="30">
-            <StackPanel Orientation="Horizontal" Margin="0,0,8,4">
+            <StackPanel Orientation="Horizontal" Width="130">
                 <TextBlock Text="代码:" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                <ComboBox ItemsSource="{Binding Symbols}" SelectedItem="{Binding FilterSymbol}" Width="100"/>
+                <TextBox Text="{Binding FilterSymbol, UpdateSourceTrigger=PropertyChanged}" Width="88" Padding="8,6" TextChanged="TextBox_TextChanged"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" Margin="0,0,8,0">
                 <TextBlock Text="起始:" VerticalAlignment="Center" Margin="0,0,4,0"/>

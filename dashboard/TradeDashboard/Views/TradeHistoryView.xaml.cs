@@ -12,4 +12,9 @@ public partial class TradeHistoryView : UserControl
     }
 
     #endregion
+
+    private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+
+    }
 }

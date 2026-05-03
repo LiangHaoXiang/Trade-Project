@@ -32,6 +32,23 @@
         <Border Grid.Row="1" Style="{StaticResource CardStyle}" Margin="0,0,0,8">
             <Grid>
                 <sp:WpfPlot x:Name="EquityPlot" Background="#1a1a2e"/>
+                <Canvas IsHitTestVisible="False">
+                    <Border x:Name="EquityTooltip" Visibility="Collapsed"
+                            Background="#2a2a3e" CornerRadius="4" Padding="10,6"
+                            BorderBrush="#505070" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock x:Name="EqTipDate" Foreground="White" FontWeight="Bold" FontSize="12" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="48"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="资金量" Foreground="#888" FontSize="11"/>
+                                <TextBlock Grid.Column="1" x:Name="EqTipEquity" Foreground="#89b4fa" FontSize="11" Margin="6,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Canvas>
                 <TextBlock x:Name="EquityPlaceholder" Text="暂无资金曲线数据，请先运行回测"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            Foreground="#6c7086" FontSize="13"/>
@@ -42,6 +59,23 @@
         <Border Grid.Row="2" Style="{StaticResource CardStyle}">
             <Grid>
                 <sp:WpfPlot x:Name="DrawdownPlot" Background="#1a1a2e"/>
+                <Canvas IsHitTestVisible="False">
+                    <Border x:Name="DrawdownTooltip" Visibility="Collapsed"
+                            Background="#2a2a3e" CornerRadius="4" Padding="10,6"
+                            BorderBrush="#505070" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock x:Name="DdTipDate" Foreground="White" FontWeight="Bold" FontSize="12" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="48"/>
+                                    <ColumnDefinition/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="回撤" Foreground="#888" FontSize="11"/>
+                                <TextBlock Grid.Column="1" x:Name="DdTipDrawdown" Foreground="#ef5350" FontSize="11" Margin="6,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Canvas>
                 <TextBlock x:Name="DrawdownPlaceholder" Text="暂无回撤数据"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            Foreground="#6c7086" FontSize="13"/>

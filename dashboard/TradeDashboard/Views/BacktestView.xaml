@@ -28,13 +28,13 @@
                     <TextBlock Text="回测参数" Style="{StaticResource SectionHeaderStyle}"/>
 
                     <TextBlock Text="代码" Foreground="#a6adc8" Margin="0,8,0,4"/>
-                    <ComboBox ItemsSource="{Binding FavoriteSymbols}"
+                    <ComboBox x:Name="SymbolComboBox"
+                              ItemsSource="{Binding FavoriteSymbols}"
                               DisplayMemberPath="DisplayText"
                               SelectedValuePath="Symbol"
-                              SelectedValue="{Binding Parameters.Symbol, UpdateSourceTrigger=PropertyChanged}"
+                              SelectedValue="{Binding Parameters.Symbol, UpdateSourceTrigger=PropertyChanged, Mode=TwoWay}"
                               IsEditable="True"
-                              IsTextSearchEnabled="True"
-                              Text="{Binding Parameters.Symbol, UpdateSourceTrigger=PropertyChanged}"/>
+                              IsTextSearchEnabled="True"/>
 
                     <TextBlock Text="开始日期" Foreground="#a6adc8" Margin="0,8,0,4"/>
                     <DatePicker SelectedDate="{Binding Parameters.StartDate}"/>
@@ -146,7 +146,26 @@
             <TabControl Grid.Row="1">
                 <TabItem Header="资金曲线">
                     <Border Style="{StaticResource CardStyle}">
-                        <sp:WpfPlot x:Name="EquityPlot" Background="#1a1a2e"/>
+                        <Grid>
+                            <sp:WpfPlot x:Name="EquityPlot" Background="#1a1a2e"/>
+                            <Canvas IsHitTestVisible="False">
+                                <Border x:Name="EquityTooltip" Visibility="Collapsed"
+                                        Background="#2a2a3e" CornerRadius="4" Padding="10,6"
+                                        BorderBrush="#505070" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock x:Name="EqTipDate" Foreground="White" FontWeight="Bold" FontSize="12" Margin="0,0,0,4"/>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="48"/>
+                                                <ColumnDefinition/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="资金量" Foreground="#888" FontSize="11"/>
+                                            <TextBlock Grid.Column="1" x:Name="EqTipEquity" Foreground="#89b4fa" FontSize="11" Margin="6,0,0,0"/>
+                                        </Grid>
+                                    </StackPanel>
+                                </Border>
+                            </Canvas>
+                        </Grid>
                     </Border>
                 </TabItem>
                 <TabItem Header="交易列表">

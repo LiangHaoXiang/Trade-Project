@@ -38,6 +38,8 @@ JSON_OUTPUT_START
 | `rsi_extreme` | RSI超买超卖 | RSI穿越30/70阈值 |
 | `bollinger_breakout` | 布林带突破 | 突破上下轨 |
 | `kdj_cross` | KDJ金叉死叉 | K/D线交叉信号 |
+| `td_sequential` | 神奇九转 | TD序列低9转买入/高9转卖出 |
+| `wave_trend` | 波段趋势 | 均线变化力度判断趋势转折 |
 
 **C# 端中文名 → Python 端策略ID 映射：**
 
@@ -50,6 +52,8 @@ JSON_OUTPUT_START
 | RSI超买超卖 | `rsi_extreme` |
 | 布林带突破 | `bollinger_breakout` |
 | KDJ金叉死叉 | `kdj_cross` |
+| 神奇九转 | `td_sequential` |
+| 波段趋势 | `wave_trend` |
 
 **Python 输出 JSON 格式：**
 

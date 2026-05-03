@@ -78,6 +78,8 @@ public partial class BacktestViewModel : ObservableObject
         "RSI超买超卖",
         "布林带突破",
         "KDJ金叉死叉",
+        "神奇九转",
+        "波段趋势",
     ];
     [ObservableProperty] private bool _isRunning;
     [ObservableProperty] private string _progressText = "";

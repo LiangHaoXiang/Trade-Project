@@ -42,6 +42,8 @@ public class PythonBacktestService : IBacktestService
             "RSI超买超卖" => "rsi_extreme",
             "布林带突破" => "bollinger_breakout",
             "KDJ金叉死叉" => "kdj_cross",
+            "神奇九转" => "td_sequential",
+            "波段趋势" => "wave_trend",
             var s => s
         };
 

@@ -37,7 +37,6 @@ public partial class TradeHistoryViewModel : ObservableObject
     {
         var trades = await m_DataService.GetAllTradesAsync();
         AllTrades = new ObservableCollection<Trade>(trades);
-        Symbols = new ObservableCollection<string>(trades.Select(t => t.Symbol).Distinct().OrderBy(s => s));
         ApplyFilter();
     }
 
@@ -47,8 +46,7 @@ public partial class TradeHistoryViewModel : ObservableObject
 
     [ObservableProperty] private ObservableCollection<Trade> _allTrades = [];
     [ObservableProperty] private ListCollectionView? _filteredTradesView;
-    [ObservableProperty] private ObservableCollection<string> _symbols = [];
-    [ObservableProperty] private string? _filterSymbol;
+    [ObservableProperty] private string _filterSymbol = "";
     [ObservableProperty] private DateTime? _filterStartDate;
     [ObservableProperty] private DateTime? _filterEndDate;
     [ObservableProperty] private string? _filterDirection;
@@ -87,7 +85,7 @@ public partial class TradeHistoryViewModel : ObservableObject
     [RelayCommand]
     private void ResetFilter()
     {
-        FilterSymbol = null;
+        FilterSymbol = "";
         FilterStartDate = null;
         FilterEndDate = null;
         FilterDirection = null;

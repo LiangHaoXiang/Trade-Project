@@ -19,6 +19,8 @@ from strategy.macd_divergence import MACDDivergenceStrategy
 from strategy.rsi_extreme import RSIExtremeStrategy
 from strategy.bollinger_breakout import BollingerBreakoutStrategy
 from strategy.kdj_cross import KDJCrossoverStrategy
+from strategy.td_sequential import TDSequentialStrategy
+from strategy.wave_trend import WaveTrendStrategy
 from backtest.engine import BacktestEngine
 from backtest.report import build_report, print_text_summary, to_json
 from monitor.logger import get_logger
@@ -32,6 +34,8 @@ STRATEGY_REGISTRY = {
     "rsi_extreme": RSIExtremeStrategy,
     "bollinger_breakout": BollingerBreakoutStrategy,
     "kdj_cross": KDJCrossoverStrategy,
+    "td_sequential": TDSequentialStrategy,
+    "wave_trend": WaveTrendStrategy,
 }
 
 logger = get_logger("main")
@@ -93,6 +97,10 @@ def main():
             strategy = strategy_cls()
         elif strategy_name in ("macd_divergence", "rsi_extreme", "kdj_cross"):
             strategy = strategy_cls()
+        elif strategy_name == "td_sequential":
+            strategy = strategy_cls(compare_period=4, sequential_count=9)
+        elif strategy_name == "wave_trend":
+            strategy = strategy_cls(ma_period=long_w)
         else:
             strategy = strategy_cls()
 
