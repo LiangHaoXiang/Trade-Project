@@ -25,7 +25,10 @@ JSON_OUTPUT_START
 
 ### 2.1 回测运行
 
-**命令：** `python main.py backtest --symbol <代码> --start <日期> --end <日期> --strategy <策略名> --short-window <N> --long-window <N> --initial-cash <金额> --json`
+**命令：** `python main.py backtest --symbol <代码> --start <日期> --end <日期> --strategy <策略名> --initial-cash <金额> --strategy-params <JSON> --json`
+
+> `--strategy-params` 为 JSON 字符串，包含当前策略的专属参数。各策略参数定义见下方 **策略参数 Schema** 表。
+> 旧参数 `--short-window` / `--long-window` 已废弃，由 `--strategy-params` 统一替代。
 
 **策略名称对照表：**
 
@@ -54,6 +57,83 @@ JSON_OUTPUT_START
 | KDJ金叉死叉 | `kdj_cross` |
 | 神奇九转 | `td_sequential` |
 | 波段趋势 | `wave_trend` |
+
+**策略参数 Schema：**
+
+每个策略拥有独立的参数集合，C# 端根据用户选择的策略动态渲染对应参数表单，并将参数值序列化为 JSON 通过 `--strategy-params` 传递。
+
+> **参数类型说明：** `int` = 整数，`float` = 浮点数。`label` 用于 UI 显示，`tooltip` 用于鼠标悬停提示。
+
+#### ma_cross — 双均线交叉
+
+| 参数 key | 类型 | 默认值 | label | tooltip |
+|----------|------|--------|-------|---------|
+| `short_window` | int | 5 | 短周期均线 | 短期移动平均线周期，用于捕捉短期趋势变化 |
+| `long_window` | int | 20 | 长周期均线 | 长期移动平均线周期，用于判断大趋势方向 |
+
+#### mean_reversion — 均值回归
+
+| 参数 key | 类型 | 默认值 | label | tooltip |
+|----------|------|--------|-------|---------|
+| `boll_window` | int | 20 | 布林带窗口 | 布林带移动平均线计算周期 |
+| `boll_std` | float | 2.0 | 标准差倍数 | 布林带上下轨距中轨的标准差倍数 |
+| `rsi_window` | int | 14 | RSI周期 | 相对强弱指标(RSI)的计算周期 |
+| `oversold` | float | 30.0 | 超卖阈值 | RSI低于此值视为超卖，可能出现买入机会 |
+| `overbought` | float | 70.0 | 超买阈值 | RSI高于此值视为超买，可能出现卖出机会 |
+
+#### momentum — 动量选股
+
+| 参数 key | 类型 | 默认值 | label | tooltip |
+|----------|------|--------|-------|---------|
+| `lookback` | int | 20 | 回看天数 | 计算动量（涨跌幅）的回看天数 |
+| `hold_days` | int | 10 | 最大持有天数 | 买入后最长持有天数，到期自动卖出 |
+
+#### macd_divergence — MACD背离
+
+| 参数 key | 类型 | 默认值 | label | tooltip |
+|----------|------|--------|-------|---------|
+| `fast` | int | 12 | 快线周期 | MACD快速EMA计算周期 |
+| `slow` | int | 26 | 慢线周期 | MACD慢速EMA计算周期 |
+| `signal` | int | 9 | 信号线周期 | MACD信号线(DEA)的EMA计算周期 |
+| `lookback` | int | 20 | 背离回看窗口 | 检测价格与MACD背离时回看的历史窗口长度 |
+
+#### rsi_extreme — RSI超买超卖
+
+| 参数 key | 类型 | 默认值 | label | tooltip |
+|----------|------|--------|-------|---------|
+| `rsi_window` | int | 14 | RSI周期 | 相对强弱指标(RSI)的计算周期 |
+| `oversold` | float | 30.0 | 超卖阈值 | RSI从下方穿越此值时触发买入信号 |
+| `overbought` | float | 70.0 | 超买阈值 | RSI从上方穿越此值时触发卖出信号 |
+
+#### bollinger_breakout — 布林带突破
+
+| 参数 key | 类型 | 默认值 | label | tooltip |
+|----------|------|--------|-------|---------|
+| `window` | int | 20 | 布林带窗口 | 布林带移动平均线计算周期 |
+| `num_std` | float | 2.0 | 标准差倍数 | 布林带上下轨距中轨的标准差倍数 |
+
+#### kdj_cross — KDJ金叉死叉
+
+| 参数 key | 类型 | 默认值 | label | tooltip |
+|----------|------|--------|-------|---------|
+| `n` | int | 9 | KDJ周期 | KDJ指标中RSV的计算周期 |
+| `m1` | int | 3 | K平滑周期 | K值对RSV的指数移动平均周期 |
+| `m2` | int | 3 | D平滑周期 | D值对K值的指数移动平均周期 |
+| `overbought` | float | 80.0 | 超买阈值 | J值高于此值时处于超买区域，金叉信号被过滤 |
+| `oversold` | float | 20.0 | 超卖阈值 | J值低于此值时处于超卖区域，死叉信号被过滤 |
+
+#### td_sequential — 神奇九转
+
+| 参数 key | 类型 | 默认值 | label | tooltip |
+|----------|------|--------|-------|---------|
+| `compare_period` | int | 4 | 比较周期 | 当日收盘价与前第N日收盘价比较，判断涨跌 |
+| `sequential_count` | int | 9 | 序列计数 | 连续满足条件的次数达到此值时产生信号（经典为9） |
+
+#### wave_trend — 波段趋势
+
+| 参数 key | 类型 | 默认值 | label | tooltip |
+|----------|------|--------|-------|---------|
+| `ma_period` | int | 20 | 均线周期 | 波段趋势参考的移动平均线周期 |
 
 **Python 输出 JSON 格式：**
 
@@ -336,3 +416,4 @@ Python 和 C# 共享同一个 SQLite 数据库文件（路径配置于 `config/s
 | 2025-05-01 | 新增 `metrics` 字段：年化收益、夏普、胜率、盈亏比、月度收益等 | Python 输出 + C# 解析 |
 | 2026-05-01 | 新增 `2.7 新闻资讯` 接口：多源聚合（东方财富+新浪），AKShare 免费接口 | Python 输出 + C# 解析 |
 | 2026-05-02 | 新增 `--strategy` 参数：支持 7 种策略选择（双均线/均值回归/动量/MACD背离/RSI超买超卖/布林带突破/KDJ金叉死叉） | Python 输入 + C# 传入 |
+| 2026-05-03 | 新增 `--strategy-params` 参数：各策略独立参数以 JSON 传递，废弃 `--short-window` / `--long-window`；新增策略参数 Schema 定义 | Python 输入 + C# 传入 + 契约文档 |

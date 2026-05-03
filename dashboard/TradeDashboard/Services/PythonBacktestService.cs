@@ -47,14 +47,16 @@ public class PythonBacktestService : IBacktestService
             var s => s
         };
 
+        var strategyParamsJson = JsonSerializer.Serialize(parameters.StrategyParams);
+        var escapedJson = strategyParamsJson.Replace("\"", "\\\"");
+
         var args = $"\"{mainPy}\" backtest" +
                    $" --symbol {parameters.Symbol}" +
                    $" --start {parameters.StartDate:yyyy-MM-dd}" +
                    $" --end {parameters.EndDate:yyyy-MM-dd}" +
                    $" --strategy {strategyName}" +
-                   $" --short-window {parameters.ShortWindow}" +
-                   $" --long-window {parameters.LongWindow}" +
                    $" --initial-cash {parameters.InitialCash}" +
+                   $" --strategy-params \"{escapedJson}\"" +
                    " --json";
 
         var psi = new ProcessStartInfo

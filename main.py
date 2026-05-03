@@ -50,10 +50,9 @@ def main():
     parser.add_argument("--symbol", default="000001", help="股票代码（默认 000001 平安银行）")
     parser.add_argument("--start", default=None, help="起始日期")
     parser.add_argument("--end", default=None, help="结束日期")
-    parser.add_argument("--short-window", type=int, default=None, help="短期均线窗口")
-    parser.add_argument("--long-window", type=int, default=None, help="长期均线窗口")
     parser.add_argument("--initial-cash", type=float, default=None, help="初始资金")
     parser.add_argument("--strategy", default="ma_cross", choices=list(STRATEGY_REGISTRY.keys()), help="策略名称")
+    parser.add_argument("--strategy-params", default=None, help="策略专属参数 JSON 字符串")
     parser.add_argument("--json", action="store_true", help="输出 JSON 格式结果")
     args = parser.parse_args()
 
@@ -83,28 +82,17 @@ def main():
             print("本地无数据，使用模拟数据进行演示...")
             data = _generate_mock_data(args.symbol)
 
-        short_w = args.short_window or 5
-        long_w = args.long_window or 20
         initial = args.initial_cash or 100_000
         strategy_name = args.strategy
 
-        strategy_cls = STRATEGY_REGISTRY.get(strategy_name, MACrossStrategy)
-        if strategy_name == "ma_cross":
-            strategy = strategy_cls(short_window=short_w, long_window=long_w)
-        elif strategy_name in ("mean_reversion", "bollinger_breakout"):
-            strategy = strategy_cls()
-        elif strategy_name == "momentum":
-            strategy = strategy_cls()
-        elif strategy_name in ("macd_divergence", "rsi_extreme", "kdj_cross"):
-            strategy = strategy_cls()
-        elif strategy_name == "td_sequential":
-            strategy = strategy_cls(compare_period=4, sequential_count=9)
-        elif strategy_name == "wave_trend":
-            strategy = strategy_cls(ma_period=long_w)
-        else:
-            strategy = strategy_cls()
+        strategy_params = {}
+        if args.strategy_params:
+            strategy_params = json.loads(args.strategy_params)
 
-        logger.info(f"BACKTEST_START strategy={strategy_name} symbol={args.symbol} short={short_w} long={long_w}")
+        strategy_cls = STRATEGY_REGISTRY.get(strategy_name, MACrossStrategy)
+        strategy = strategy_cls(**strategy_params)
+
+        logger.info(f"BACKTEST_START strategy={strategy_name} symbol={args.symbol} params={strategy_params}")
         print(f"正在回测 {args.symbol} [{start} ~ {end}] 策略={strategy_name}，共 {len(data)} 条数据...")
 
         engine = BacktestEngine(initial_cash=initial)

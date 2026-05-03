@@ -30,16 +30,25 @@ dotnet test TradeDashboard.Tests --verbosity normal
 | Agent | 职责 | 触发时机 |
 |-------|------|---------|
 | **PM (项目经理)** | 统筹全局、分配任务、维护 API 契约 | 每次收到需求时 |
-| **Python Agent** | 后端模块开发（策略/因子/风控/交易） | PM 分配后端任务时 |
+| **Python Agent** | 后端模块开发（策略/因子/风控/交易/新闻） | PM 分配后端任务时 |
 | **C# Agent** | WPF 前端开发（ViewModel/View/Service） | PM 分配前端任务时 |
 | **UI 测试 Agent** | 编写/维护/运行 UI 自动化测试 | 前端代码变更后 |
+| **UI 视觉审核** | 截图审核 UI 布局、颜色、对齐等视觉问题 | C# Agent 完成界面后、提测前 |
 
 ### UI 测试 Agent 工作流
 
-1. **C# Agent 完成界面变更后**，PM 指派 UI 测试 Agent 执行测试
-2. UI 测试 Agent 执行 `dotnet test`，报告结果
-3. 如有失败，PM 评估优先级并指派 C# Agent 修复
-4. 修复后重新测试，直到全部通过
+1. **C# Agent 完成界面变更后**，PM 指派 UI 视觉审核执行截图审核
+2. 视觉审核通过后，PM 指派 UI 测试 Agent 执行自动化测试
+3. UI 测试 Agent 执行 `dotnet test`，报告结果
+4. 如有失败，PM 评估优先级并指派 C# Agent 修复
+5. 修复后重新测试，直到全部通过
+
+### UI 视觉审核工作流
+
+- 工具：`tools/ui_screenshot.py`（截图）+ `tools/ui_visual_review.py`（审核）
+- C# Agent 完成界面后，PM 安排视觉审核
+- 审核关注：布局对齐、颜色规范（A股红涨绿跌）、中文显示、空状态提示
+- 严重问题作为缺陷指派给 C# Agent 修复
 
 ### 测试文件组织
 

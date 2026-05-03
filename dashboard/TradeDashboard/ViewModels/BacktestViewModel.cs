@@ -27,6 +27,7 @@ public partial class BacktestViewModel : ObservableObject
         m_BacktestService = backtestService;
         m_DataService = dataService;
         _ = LoadFavoriteSymbolsAsync();
+        RefreshStrategyParams();
     }
 
     #endregion
@@ -68,6 +69,25 @@ public partial class BacktestViewModel : ObservableObject
     #region 私有接口
 
     [ObservableProperty] private BacktestParameters _parameters = new();
+
+    partial void OnParametersChanged(BacktestParameters value)
+    {
+        OnPropertyChanged(nameof(SelectedStrategy));
+    }
+
+    public string SelectedStrategy
+    {
+        get => Parameters.Strategy;
+        set
+        {
+            if (Parameters.Strategy == value) return;
+            Parameters.Strategy = value;
+            OnPropertyChanged(nameof(SelectedStrategy));
+            RefreshStrategyParams();
+        }
+    }
+
+    [ObservableProperty] private ObservableCollection<StrategyParamEntry> _currentStrategyParams = [];
     [ObservableProperty] private ObservableCollection<StockInfo> _favoriteSymbols = [];
     [ObservableProperty] private ObservableCollection<string> _availableStrategies =
     [
@@ -95,6 +115,30 @@ public partial class BacktestViewModel : ObservableObject
     [ObservableProperty] private double _resultAnnualReturnPct;
     [ObservableProperty] private double _resultVolatilityPct;
     [ObservableProperty] private string _resultDrawdownPeriod = "";
+
+    private void RefreshStrategyParams()
+    {
+        var defaults = StrategyParameterRegistry.GetDefaultParams(Parameters.Strategy);
+        Parameters.StrategyParams = new Dictionary<string, double>(defaults);
+
+        if (!StrategyParameterRegistry.Definitions.TryGetValue(Parameters.Strategy, out var defs))
+        {
+            CurrentStrategyParams = [];
+            return;
+        }
+
+        var entries = new ObservableCollection<StrategyParamEntry>();
+        foreach (var d in defs)
+        {
+            var entry = new StrategyParamEntry(d, defaults[d.Key]);
+            entry.ValueChanged += (key, val) =>
+            {
+                Parameters.StrategyParams[key] = val;
+            };
+            entries.Add(entry);
+        }
+        CurrentStrategyParams = entries;
+    }
 
     [RelayCommand]
     private async Task RunBacktestAsync()
@@ -148,4 +192,43 @@ public partial class BacktestViewModel : ObservableObject
     public event EventHandler? EquityDataChanged;
 
     #endregion
+}
+
+public class StrategyParamEntry : ObservableObject
+{
+    public StrategyParameterDefinition Definition { get; }
+
+    public string Label => Definition.Label;
+    public string Tooltip => Definition.Tooltip;
+    public StrategyParameterType ParamType => Definition.Type;
+
+    private string _displayValue;
+    public string DisplayValue
+    {
+        get => _displayValue;
+        set
+        {
+            if (SetProperty(ref _displayValue, value))
+            {
+                if (Definition.Type == StrategyParameterType.Int && int.TryParse(value, out var intVal))
+                {
+                    ValueChanged?.Invoke(Definition.Key, intVal);
+                }
+                else if (Definition.Type == StrategyParameterType.Float && double.TryParse(value, out var floatVal))
+                {
+                    ValueChanged?.Invoke(Definition.Key, floatVal);
+                }
+            }
+        }
+    }
+
+    public event Action<string, double>? ValueChanged;
+
+    public StrategyParamEntry(StrategyParameterDefinition definition, double defaultValue)
+    {
+        Definition = definition;
+        _displayValue = definition.Type == StrategyParameterType.Int
+            ? ((int)defaultValue).ToString()
+            : defaultValue.ToString();
+    }
 }

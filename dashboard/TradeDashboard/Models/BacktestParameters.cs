@@ -6,7 +6,6 @@ public class BacktestParameters
     public DateTime StartDate { get; set; } = new(2024, 1, 1);
     public DateTime EndDate { get; set; } = DateTime.Today;
     public string Strategy { get; set; } = "双均线交叉";
-    public int ShortWindow { get; set; } = 5;
-    public int LongWindow { get; set; } = 20;
     public double InitialCash { get; set; } = 100_000;
+    public Dictionary<string, double> StrategyParams { get; set; } = [];
 }

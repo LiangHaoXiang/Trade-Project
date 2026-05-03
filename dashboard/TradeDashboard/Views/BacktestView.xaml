@@ -43,13 +43,22 @@
                     <DatePicker SelectedDate="{Binding Parameters.EndDate}"/>
 
                     <TextBlock Text="策略" Foreground="#a6adc8" Margin="0,8,0,4"/>
-                    <ComboBox ItemsSource="{Binding AvailableStrategies}" SelectedItem="{Binding Parameters.Strategy}"/>
+                    <ComboBox ItemsSource="{Binding AvailableStrategies}" SelectedItem="{Binding SelectedStrategy}"/>
 
-                    <TextBlock Text="短周期均线" Foreground="#a6adc8" Margin="0,8,0,4"/>
-                    <TextBox Text="{Binding Parameters.ShortWindow}"/>
-
-                    <TextBlock Text="长周期均线" Foreground="#a6adc8" Margin="0,8,0,4"/>
-                    <TextBox Text="{Binding Parameters.LongWindow}"/>
+                    <ItemsControl ItemsSource="{Binding CurrentStrategyParams}" Margin="0,4,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="0,4,0,0">
+                                    <TextBlock Text="{Binding Label}" Foreground="#a6adc8" Margin="0,4,0,2">
+                                        <TextBlock.ToolTip>
+                                            <ToolTip Content="{Binding Tooltip}" Background="#2a2a3e" Foreground="#cdd6f4" BorderBrush="#505070"/>
+                                        </TextBlock.ToolTip>
+                                    </TextBlock>
+                                    <TextBox Text="{Binding DisplayValue, UpdateSourceTrigger=PropertyChanged}"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
                     <TextBlock Text="初始资金" Foreground="#a6adc8" Margin="0,8,0,4"/>
                     <TextBox Text="{Binding Parameters.InitialCash}"/>

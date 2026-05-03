@@ -15,19 +15,31 @@
 
 ## 2. 技术选型
 
+### 后端（Python）
 
-| 层面   | 选型                                  | 理由                   |
-| ---- | ----------------------------------- | -------------------- |
-| 语言   | Python 3.11+                        | 量化生态最成熟，库丰富          |
-| 数据存储 | SQLite + CSV                        | 个人项目够用，零运维           |
-| 行情数据 | AKShare（免费） / Tushare（需积分）/BaoStock | A股数据源，支持日/分钟级        |
-| 回测框架 | Backtrader / 自研轻量框架                 | Backtrader 社区大；自研更灵活 |
-| 因子计算 | Pandas + NumPy + TA-Lib             | 标准组合                 |
-| 机器学习 | Scikit-learn（初期）/ PyTorch（后期）       | 渐进引入                 |
-| 交易接口 | easytrader / QMT（券商量化客户端）           | A股个人可用的自动化方案         |
-| 调度   | APScheduler / 系统定时任务                | 定时执行策略               |
-| 可视化  | Streamlit / Matplotlib              | 策略监控面板               |
-| 项目管理 | uv（包管理）+ pyproject.toml             | 现代 Python 项目管理       |
+| 层面   | 选型                          | 理由                   | 状态   |
+| ---- | --------------------------- | -------------------- | ---- |
+| 语言   | Python 3.11+                | 量化生态最成熟，库丰富          | ✅ 已用 |
+| 数据存储 | SQLite                      | 个人项目够用，零运维，Python/C# 共享 | ✅ 已用 |
+| 行情数据 | AKShare（免费） / Tushare（需积分） | A股数据源，支持日/分钟级        | ✅ 已用 |
+| 回测框架 | 自研轻量框架                      | 逐bar驱动，灵活可控          | ✅ 已实现 |
+| 因子计算 | Pandas + NumPy（纯 Python 实现） | 无需 TA-Lib 依赖，自包含     | ✅ 已实现 |
+| 机器学习 | Scikit-learn（初期）/ PyTorch（后期） | 渐进引入                 | 🔜 待开发 |
+| 交易接口 | easytrader / QMT（券商量化客户端）   | A股个人可用的自动化方案         | ✅ 框架已搭建 |
+| 调度   | APScheduler / 系统定时任务        | 定时执行策略               | 🔜 待开发 |
+| 项目管理 | uv（包管理）+ pyproject.toml     | 现代 Python 项目管理       | ✅ 已用 |
+
+### 前端（C# WPF）
+
+| 层面     | 选型                          | 理由             | 状态   |
+| ------ | --------------------------- | -------------- | ---- |
+| 框架     | .NET 8 + WPF                | 桌面原生性能，专业交易软件体验 | ✅ 已用 |
+| 图表     | ScottPlot 5                 | 高性能交互式科学绘图     | ✅ 已用 |
+| MVVM   | CommunityToolkit.Mvvm       | 现代 MVVM 模式     | ✅ 已用 |
+| 数据库    | Microsoft.Data.Sqlite       | 与 Python 共享 SQLite | ✅ 已用 |
+| UI 测试  | FlaUI.UIA3 + xUnit          | Windows UI 自动化测试 | ✅ 已用 |
+| 日志监控   | FileSystemWatcher + 自定义服务    | 实时读取 Python 日志  | ✅ 已用 |
+| 交互方式   | CLI 调用 + JSON 输出             | Process 调用 Python main.py | ✅ 已用 |
 
 
 ---
@@ -37,35 +49,53 @@
 ```
 TradeProject/
 ├── pyproject.toml              # 项目配置 & 依赖
+├── main.py                     # Python 入口（CLI 命令分发）
 ├── config/
-│   ├── settings.yaml           # 全局配置（账户、参数）
-│   └── strategies/             # 策略配置文件
+│   ├── settings.yaml           # 全局配置（数据库路径、账户参数）
+│   └── secrets.py              # API Token 等敏感配置
 ├── data/
-│   ├── manager.py              # 数据下载 & 更新入口
-│   ├── storage.py              # 数据存储层（SQLite 操作）
-│   └── cache/                  # 本地数据缓存目录
+│   ├── manager.py              # 数据下载、缓存、更新（AKShare/Tushare）
+│   ├── generate_test_data.py   # 测试数据生成
+│   └── logs/                   # Python 运行日志目录
 ├── strategy/
-│   ├── base.py                 # 策略基类（定义接口）
-│   ├── factors.py              # 通用因子库
-│   ├── ma_cross.py             # 示例：双均线策略
-│   ├── mean_reversion.py       # 示例：均值回归策略
-│   └── momentum.py             # 示例：动量策略
+│   ├── base.py                 # 策略基类（BaseStrategy / Signal / Direction）
+│   ├── factors.py              # 通用因子库（MA/EMA/RSI/MACD/布林带/KDJ/ATR）
+│   ├── ma_cross.py             # 双均线交叉策略
+│   ├── mean_reversion.py       # 均值回归策略
+│   ├── momentum.py             # 动量选股策略
+│   ├── macd_divergence.py      # MACD 背离策略
+│   ├── rsi_extreme.py          # RSI 超买超卖策略
+│   ├── bollinger_breakout.py   # 布林带突破策略
+│   ├── kdj_cross.py            # KDJ 金叉死叉策略
+│   ├── td_sequential.py        # 神奇九转策略
+│   └── wave_trend.py           # 波段趋势策略
 ├── backtest/
-│   ├── engine.py               # 回测引擎
-│   ├── portfolio.py            # 持仓 & 资金管理
-│   ├── metrics.py              # 绩效指标计算
-│   └── report.py               # 回测报告生成
+│   ├── engine.py               # 回测引擎（逐bar驱动，手续费/滑点/印花税）
+│   ├── metrics.py              # 绩效指标（夏普/回撤/胜率/盈亏比/月度收益）
+│   └── report.py               # 回测报告（JSON 输出 + 文本摘要）
 ├── risk/
-│   ├── manager.py              # 风控管理器
-│   └── rules.py                # 风控规则（止损/仓位/集中度）
+│   ├── manager.py              # 风控管理器（组合规则链式检查）
+│   └── rules.py                # 5条风控规则（仓位/日损/止损/持仓数/涨跌停）
 ├── trader/
-│   ├── simulator.py            # 模拟交易
-│   └── broker.py               # 券商接口封装（实盘）
+│   ├── simulator.py            # 模拟交易（信号→风控→成交→记录）
+│   └── broker.py               # 券商接口封装（easytrader/QMT 框架）
 ├── monitor/
-│   ├── dashboard.py            # Streamlit 监控面板
-│   └── notifier.py             # 消息通知（邮件/微信）
-├── scheduler.py                # 定时任务调度
-└── main.py                     # 入口
+│   └── logger.py               # 结构化文件日志（供 WPF 端实时读取）
+├── news/
+│   └── news_fetcher.py         # 新闻资讯（东方财富+新浪财经多源聚合）
+├── tools/
+│   ├── ScreenshotRunner.cs     # UI 截图工具（C# 端）
+│   ├── ui_screenshot.py        # UI 截图脚本（Python 端）
+│   └── ui_visual_review.py     # UI 视觉审核工具
+└── dashboard/
+    └── TradeDashboard/         # C# WPF 桌面仪表盘
+        ├── Models/             # 数据模型（Trade/BacktestResult/DailyBar/NewsItem 等）
+        ├── ViewModels/         # MVVM ViewModel（9个页面）
+        ├── Views/              # XAML 视图（9个页面）
+        ├── Services/           # 服务层（数据/回测/交易/新闻/日志/配置）
+        ├── Converters/         # WPF 值转换器（方向/颜色/状态/空状态）
+        ├── Resources/          # 全局样式（Styles.xaml）
+        └── Tests/              # FlaUI UI 自动化测试
 ```
 
 ---
@@ -111,11 +141,21 @@ class Signal:
     reason: str
 ```
 
-**初期提供 3 个示例策略：**
+**已实现 9 个策略：**
 
-1. **双均线交叉** — 经典趋势跟踪，适合入门验证系统
-2. **均值回归** — 利用短期超跌反弹
-3. **动量选股** — 按涨跌幅排名选股轮动
+| # | 策略 | 文件 | 说明 |
+|---|------|------|------|
+| 1 | **双均线交叉** | `ma_cross.py` | 经典趋势跟踪，MA短/长周期金叉死叉 |
+| 2 | **均值回归** | `mean_reversion.py` | 布林带+RSI超跌反弹 |
+| 3 | **动量选股** | `momentum.py` | 按涨跌幅排名选股轮动 |
+| 4 | **MACD背离** | `macd_divergence.py` | 底背离买入/顶背离卖出 |
+| 5 | **RSI超买超卖** | `rsi_extreme.py` | RSI穿越30/70阈值 |
+| 6 | **布林带突破** | `bollinger_breakout.py` | 突破上下轨 |
+| 7 | **KDJ金叉死叉** | `kdj_cross.py` | K/D线交叉信号 |
+| 8 | **神奇九转** | `td_sequential.py` | TD序列低9转买入/高9转卖出 |
+| 9 | **波段趋势** | `wave_trend.py` | 均线变化力度判断趋势转折 |
+
+> 每个策略支持独立的参数集合，C# 端根据用户选择动态渲染参数表单，通过 `--strategy-params` 以 JSON 传递。参数定义详见 `API_CONTRACT.md`。
 
 ### 4.3 回测引擎
 
@@ -125,16 +165,19 @@ class Signal:
 - 手续费、滑点、印花税模拟（A股：买入万1，卖出万1+千1印花税）
 - 支持多策略、多标的同时回测
 
-**输出指标：**
+**输出指标（已全部实现）：**
 
 
-| 指标       | 说明     |
-| -------- | ------ |
-| 年化收益率    | 核心收益指标 |
-| 最大回撤     | 风险控制   |
-| 夏普比率     | 风险调整收益 |
-| 胜率 / 盈亏比 | 策略有效性  |
-| 月度收益分布   | 策略稳定性  |
+| 指标       | 说明     | 状态 |
+| -------- | ------ | ---- |
+| 年化收益率    | 核心收益指标 | ✅ |
+| 最大回撤（含起止日期） | 风险控制   | ✅ |
+| 夏普比率     | 风险调整收益 | ✅ |
+| 胜率 / 盈亏比 | 策略有效性  | ✅ |
+| 月度收益分布   | 策略稳定性  | ✅ |
+| 年化波动率    | 波动评估   | ✅ |
+| 日均收益率    | 日级收益   | ✅ |
+| 总交易天数    | 统计     | ✅ |
 
 
 ### 4.4 风控模块
@@ -159,89 +202,113 @@ class Signal:
 信号 → 风控检查 → 仓位计算 → 下单 → 记录
 ```
 
-- **模拟模式：** 所有订单写入本地记录，不连券商
-- **实盘模式：** 通过 easytrader / QMT 连接券商客户端下单
+- **模拟模式（Python端）：** `trader/simulator.py` — 接收信号，经风控检查后模拟成交，记录到 SQLite
+- **模拟模式（C#端）：** `SimulatedTradingService` — WPF 内置模拟交易，支持手动下单/持仓管理/委托记录，风控检查（仓位限制20%/最大持仓5只），SQLite 持久化
+- **实盘模式：** `trader/broker.py` — 通过 easytrader / QMT 连接券商客户端下单（框架已搭建）
 - 实盘前必须通过模拟盘验证 >= 30 个交易日
 
 ### 4.6 监控面板
 
-Streamlit 搭建简易 Web 面板：
+~~Streamlit 搭建简易 Web 面板~~ → 已改用 **C# WPF 桌面仪表盘**（见第7节），交互体验更接近专业交易软件。
 
-- 当前持仓 & 盈亏
-- 当日成交记录
-- 策略绩效曲线
-- 风控状态
+WPF 仪表盘已实现的功能：
+- 总览页：资产概览卡片 + 近期交易 + 资金曲线
+- 行情页：K线图（ScottPlot 交互）+ 股票列表 + 自选股
+- 交易页：模拟下单面板 + 持仓列表 + 委托记录
+- 交易记录页：筛选/排序历史交易
+- 资金曲线页：权益曲线 + 回撤图
+- 回测页：策略选择 + 动态参数表单 + 绩效指标卡片
+- 资讯页：多源新闻聚合 + 搜索 + 自动刷新
+- 日志页：Python 日志实时监控
+- 配置页：YAML 配置编辑
+
+### 4.7 新闻资讯模块
+
+**职责：** 聚合多源财经新闻，在 WPF 仪表盘中展示
+
+- **Python端**：`news/news_fetcher.py` — 通过 AKShare 免费接口聚合东方财富 + 新浪财经两个数据源
+- **C#端**：`NewsViewModel` + `PythonNewsService` — 调用 Python CLI 获取新闻，支持搜索、30分钟自动刷新
+- 按标题去重，按时间倒序，默认返回最新50条
+- 新闻数据不持久化，每次实时拉取
+- 接口定义详见 `API_CONTRACT.md` 第2.7节
 
 ---
 
 ## 5. 数据流
 
 ```
-AKShare/Tushare
+AKShare / Tushare
        │
        ▼
-  DataManager ──► SQLite 本地库
+  DataManager ──► SQLite 本地库（Python/C# 共享）
        │
        ▼
-  Strategy.next(bar) ──► Signal
+  Strategy.next(idx, data) ──► Signal
        │
        ▼
   RiskManager.check(signal) ──► 通过/拒绝
        │
        ▼
-  Trader.execute(signal) ──► 模拟 / 券商下单
+  Trader.execute(signal) ──► 模拟成交 / 券商下单
        │
        ▼
-  Portfolio 更新 + Monitor 展示
+  Portfolio 更新 + WPF 仪表盘展示
+       │
+       ▼
+  Logger ──► 文件日志 ──► WPF 日志监控页实时显示
 ```
 
 ---
 
 ## 6. 实施路线
 
-### 第一阶段：基础设施（第 1-2 周）
+### 第一阶段：基础设施 ✅ 已完成
 
-- 项目初始化（uv、pyproject.toml、目录结构）
-- DataManager 数据下载 & 缓存（efinance + AKShare 双源，SQLite 本地缓存）
-- SQLite 存储层封装（data/storage.py）
-- 基础因子计算（MA、RSI、布林带等）→ strategy/factors.py
+- ✅ 项目初始化（uv、pyproject.toml、目录结构）
+- ✅ DataManager 数据下载 & 缓存（AKShare/Tushare，SQLite 本地缓存）
+- ✅ SQLite 存储层（集成于 data/manager.py）
+- ✅ 基础因子计算（MA、EMA、RSI、MACD、布林带、KDJ、ATR 等）→ strategy/factors.py
 
-### 第二阶段：回测系统（第 3-4 周）
+### 第二阶段：回测系统 ✅ 已完成
 
-- BaseStrategy 策略基类（Signal / Direction 定义）
-- 回测引擎（逐 bar 驱动，手续费/印花税/滑点模拟）
-- 双均线策略实现并验证
-- 资金 & 持仓管理（backtest/portfolio.py）
-- 绩效指标计算（backtest/metrics.py：夏普比率、最大回撤、胜率等）
-- 回测报告生成（backtest/report.py）
+- ✅ BaseStrategy 策略基类（Signal / Direction 定义）
+- ✅ 回测引擎（逐 bar 驱动，手续费/印花税/滑点模拟）
+- ✅ 双均线策略实现并验证
+- ✅ 资金 & 持仓管理（集成于 backtest/engine.py）
+- ✅ 绩效指标计算（backtest/metrics.py：夏普比率、最大回撤、胜率、盈亏比、月度收益、波动率等）
+- ✅ 回测报告生成（backtest/report.py：JSON 输出 + 文本摘要）
 
-### 第三阶段：策略开发（第 5-6 周）
+### 第三阶段：策略开发 ✅ 已完成
 
-- 均值回归策略
-- 动量选股策略
-- 因子库扩展（MACD、KDJ、换手率等）
-- 策略对比 & 参数优化
+- ✅ 均值回归策略
+- ✅ 动量选股策略
+- ✅ 因子库扩展（MACD、KDJ、布林带等）
+- ✅ 额外策略：MACD背离、RSI超买超卖、布林带突破、KDJ金叉死叉、神奇九转、波段趋势
+- ✅ 策略独立参数支持（`--strategy-params` JSON 传递）
 
-### 第四阶段：风控 & 执行（第 7-8 周）
+### 第四阶段：风控 & 执行 ✅ 已完成
 
-- 风控规则模块（risk/manager.py、risk/rules.py）
-- 模拟交易模块（trader/simulator.py）
-- 定时调度（收盘后运行策略）
-- 交易记录持久化
+- ✅ 风控规则模块（risk/manager.py、risk/rules.py — 5条规则）
+- ✅ 模拟交易模块 Python 端（trader/simulator.py）
+- ✅ 模拟交易模块 C# 端（SimulatedTradingService — 下单/持仓/委托/风控）
+- ✅ 交易记录持久化（SQLite 共享）
+- ✅ 券商接口框架（trader/broker.py — easytrader/QMT）
 
-### 第五阶段：监控 & 实盘准备（第 9-10 周）
+### 第五阶段：监控 & 可视化 ✅ 已完成
 
-- ~~Streamlit 监控面板~~ → 已改用 WPF 桌面仪表盘（见下方）
-- 消息通知
-- 券商接口对接（trader/broker.py）
-- 模拟盘跑满 30 个交易日
+- ✅ ~~Streamlit 监控面板~~ → WPF 桌面仪表盘（9个Tab页）
+- ✅ 新闻资讯模块（news/news_fetcher.py + NewsViewModel）
+- ✅ 日志监控（Python logger.py + C# FileLogMonitorService）
+- ✅ UI 自动化测试框架（FlaUI.UIA3 + xUnit）
+- 🔜 消息通知（邮件/微信）
 
 ### 第六阶段：迭代优化（持续）
 
-- 引入机器学习因子
-- 多策略组合 & 资金分配
-- 分钟级策略
-- 实盘运行 & 监控
+- 🔜 引入机器学习因子
+- 🔜 多策略组合 & 资金分配
+- 🔜 分钟级策略
+- 🔜 实盘运行 & 监控
+- 🔜 定时调度（APScheduler）
 
 ---
 
@@ -249,29 +316,33 @@ AKShare/Tushare
 
 > 原计划使用 Streamlit Web 面板，实际采用 WPF 桌面应用，交互体验更接近专业交易软件。
 
-**技术栈：** .NET 8 + WPF + ScottPlot 5 + CommunityToolkit.Mvvm + Serilog + SQLite
+**技术栈：** .NET 8 + WPF + ScottPlot 5 + CommunityToolkit.Mvvm + Microsoft.Data.Sqlite + FlaUI.UIA3（测试）
 
 ### 已完成
 
-- 项目框架搭建（MVVM 架构，依赖注入）
-- 深色主题 + 中文 UI
-- Dashboard 总览页（资产概览卡片）
-- MarketDataView 行情页（K线图 + ScottPlot 交互，十字光标、缩放拖拽）
-- TradeHistoryView 交易历史页
-- EquityCurveView 资金曲线页
-- BacktestView 回测页
-- LogViewerView 日志监控页
-- ConfigurationView 配置管理页
-- C# 代码规范化（m_/s_/k_ 前缀、花括号另起一行、#region 中文分组）
+- ✅ 项目框架搭建（MVVM 架构，依赖注入，9个Tab页）
+- ✅ 深色主题 + 中文 UI（全套 Converter：方向/颜色/状态/空状态）
+- ✅ Dashboard 总览页（资产概览卡片 + 近期交易 + 资金曲线）
+- ✅ MarketDataView 行情页（K线图 + ScottPlot 交互，十字光标、缩放拖拽、加载更多历史数据、自选股管理）
+- ✅ TradingView 交易页（模拟下单面板 + 持仓列表 + 委托记录 + 重置账户）
+- ✅ TradeHistoryView 交易历史页（筛选：股票代码/日期范围/方向）
+- ✅ EquityCurveView 资金曲线页（权益曲线 + 回撤图）
+- ✅ BacktestView 回测页（9策略选择 + 动态参数表单 + 绩效指标卡片 + 交易明细）
+- ✅ NewsView 资讯页（多源新闻聚合 + 搜索 + 30分钟自动刷新 + 浏览器跳转）
+- ✅ LogViewerView 日志监控页（实时读取 Python 日志 + 搜索 + 级别筛选）
+- ✅ ConfigurationView 配置管理页（YAML 编辑 + 保存/重载）
+- ✅ Toast 通知系统
+- ✅ UI 自动化测试框架（FlaUI.UIA3 + xUnit，覆盖主要页面）
+- ✅ C# 代码规范化（m_/s_/k_ 前缀、花括号另起一行、#region 中文分组）
+- ✅ 策略参数动态渲染（StrategyParameterRegistry + StrategyParamEntry）
 
 ### 待完善
 
-- 接入真实回测数据（目前部分视图使用模拟数据）
-- 行情实时刷新
-- 回测结果可视化（净值曲线、回撤图、月度收益热力图）
-- 持仓 & 盈亏实时展示
-- 风控状态面板
-- 策略参数在线调整
+- 行情实时刷新（WebSocket / 轮询）
+- 回测结果可视化增强（月度收益热力图）
+- 消息通知（邮件/微信告警）
+- 实盘对接（easytrader/QMT 实时下单）
+- 定时调度集成
 
 ### WPF UI 规范（必须遵循）
 
@@ -318,13 +389,24 @@ AKShare/Tushare
 
 ## 9. 当前进度 & 下一步
 
-**进度：** 第一阶段 ~60%，第二阶段 ~50%，WPF 仪表盘框架完成。
+**进度：** 第一至第五阶段基本完成。核心量化链路（数据→策略→回测→风控→模拟交易→可视化）已全部打通。
+
+**已完成的关键里程碑：**
+- ✅ 9个量化策略（含独立参数）
+- ✅ 完整回测系统（逐bar驱动 + 绩效指标 + JSON报告）
+- ✅ 5条风控规则
+- ✅ Python/C# 双端模拟交易
+- ✅ WPF 桌面仪表盘（9个功能页）
+- ✅ 新闻资讯聚合
+- ✅ 日志实时监控
+- ✅ UI 自动化测试框架
+- ✅ API 契约文档维护（Python↔C# 接口同步）
 
 **下一步优先级：**
 
-1. 补全回测绩效指标（metrics.py）和报告（report.py），让回测结果完整可用
-2. 因子库（factors.py），为后续策略打基础
-3. 更多策略（均值回归、动量选股）
-4. 风控模块 + 模拟交易
-5. WPF 仪表盘接入真实数据
+1. 行情实时刷新（WebSocket 或定时轮询）
+2. 月度收益热力图可视化
+3. 定时调度（APScheduler，收盘后自动运行策略）
+4. 消息通知（邮件/微信告警）
+5. 引入机器学习因子
 
