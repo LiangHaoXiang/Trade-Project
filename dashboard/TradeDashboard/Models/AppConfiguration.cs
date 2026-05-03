@@ -7,6 +7,7 @@ public class AppConfiguration
     public StrategyConfig Strategy { get; set; } = new();
     public RiskConfig Risk { get; set; } = new();
     public TradingConfig Trading { get; set; } = new();
+    public BrokerConfig Broker { get; set; } = new();
 }
 
 public class DatabaseConfig
@@ -44,4 +45,13 @@ public class TradingConfig
     public double CommissionRate { get; set; } = 0.0001;
     public double StampTax { get; set; } = 0.001;
     public double Slippage { get; set; } = 0.001;
+}
+
+public class BrokerConfig
+{
+    public string Type { get; set; } = "sim";
+    public string Client { get; set; } = "ths";
+    public string ExePath { get; set; } = "";
+    public string QmtPath { get; set; } = "";
+    public double MaxSingleOrderAmount { get; set; } = 50000;
 }

@@ -45,6 +45,7 @@ public partial class App : Application
             services.AddSingleton<IBacktestService, PythonBacktestService>();
             services.AddSingleton<ILogMonitorService, FileLogMonitorService>();
             services.AddSingleton<ITradingService, SimulatedTradingService>();
+            services.AddSingleton<ILiveTradingService, LiveTradingService>();
             services.AddSingleton<INewsService, PythonNewsService>();
 
             services.AddTransient<DashboardViewModel>();

@@ -145,6 +145,7 @@ public partial class BacktestViewModel : ObservableObject
     {
         IsRunning = true;
         ProgressText = "正在运行回测...";
+        InteractionLogService.Write("回测", "开始运行回测");
         try
         {
             var progress = new Progress<string>(msg => ProgressText = msg);

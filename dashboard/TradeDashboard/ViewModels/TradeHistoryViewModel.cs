@@ -35,6 +35,7 @@ public partial class TradeHistoryViewModel : ObservableObject
     [RelayCommand]
     public async Task LoadDataAsync()
     {
+        InteractionLogService.Write("交易记录", "加载数据");
         var trades = await m_DataService.GetAllTradesAsync();
         AllTrades = new ObservableCollection<Trade>(trades);
         ApplyFilter();
@@ -56,6 +57,7 @@ public partial class TradeHistoryViewModel : ObservableObject
     [RelayCommand]
     private void ApplyFilter()
     {
+        InteractionLogService.Write("交易记录", "筛选");
         var filtered = AllTrades.AsEnumerable();
         if (!string.IsNullOrEmpty(FilterSymbol))
         {
@@ -85,6 +87,7 @@ public partial class TradeHistoryViewModel : ObservableObject
     [RelayCommand]
     private void ResetFilter()
     {
+        InteractionLogService.Write("交易记录", "重置筛选");
         FilterSymbol = "";
         FilterStartDate = null;
         FilterEndDate = null;

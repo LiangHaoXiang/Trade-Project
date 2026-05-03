@@ -11,11 +11,20 @@
 注意：实盘交易需先完成模拟盘验证（>= 30 个交易日）
 """
 import json
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Protocol
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
 
 import yaml
+
+from monitor.logger import get_logger
+
+logger = get_logger("broker")
+
+AUDIT_LOG_DIR = Path(__file__).parent.parent / "data" / "logs"
 
 
 @dataclass
@@ -60,6 +69,31 @@ class AccountInfo:
             self.positions = []
 
 
+@dataclass
+class Entrust:
+    entrust_no: str = ""
+    symbol: str = ""
+    name: str = ""
+    direction: str = ""
+    price: float = 0.0
+    volume: int = 0
+    filled_volume: int = 0
+    status: str = ""
+    order_time: str = ""
+
+
+def _audit_log(action: str, detail: dict) -> None:
+    AUDIT_LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log_file = AUDIT_LOG_DIR / "trade_audit.log"
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "action": action,
+        **detail,
+    }
+    with open(log_file, "a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
 class BrokerBase(ABC):
     """券商接口基类"""
 
@@ -91,6 +125,16 @@ class BrokerBase(ABC):
     def disconnect(self) -> None:
         """断开连接"""
 
+    @property
+    def is_connected(self) -> bool:
+        return False
+
+    def get_today_entrusts(self) -> list[Entrust]:
+        return []
+
+    def get_today_trades(self) -> list[dict]:
+        return []
+
 
 class EasyTraderBroker(BrokerBase):
     """easytrader 券商接口实现
@@ -103,54 +147,113 @@ class EasyTraderBroker(BrokerBase):
         self.m_broker_type = broker_type
         self.m_exe_path = exe_path
         self.m_trader = None
+        self.m_connected = False
+        self.m_max_retries = 3
+        self.m_retry_delay = 2.0
+
+    @property
+    def is_connected(self) -> bool:
+        return self.m_connected and self.m_trader is not None
 
     def connect(self) -> bool:
         try:
             import easytrader
+            logger.info(f"BROKER_CONNECT type={self.m_broker_type} exe={self.m_exe_path or 'auto'}")
             self.m_trader = easytrader.use(self.m_broker_type)
             if self.m_exe_path:
                 self.m_trader.prepare(exe_path=self.m_exe_path)
             else:
                 self.m_trader.prepare()
+            self.m_connected = True
+            logger.info("BROKER_CONNECT_SUCCESS")
             return True
         except Exception as e:
-            print(f"easytrader 连接失败: {e}")
+            self.m_connected = False
+            logger.error(f"BROKER_CONNECT_FAILED error={e}")
             return False
 
+    def _ensure_connected(self) -> bool:
+        if self.is_connected:
+            return True
+        logger.info("BROKER_RECONNECT")
+        return self.connect()
+
+    def _with_retry(self, action_name: str, action_fn, max_retries: int = None):
+        retries = max_retries or self.m_max_retries
+        last_error = None
+        for attempt in range(retries):
+            try:
+                if not self._ensure_connected():
+                    raise ConnectionError("券商客户端未连接")
+                return action_fn()
+            except Exception as e:
+                last_error = e
+                logger.warning(f"BROKER_{action_name}_RETRY attempt={attempt + 1}/{retries} error={e}")
+                if attempt < retries - 1:
+                    self.m_connected = False
+                    time.sleep(self.m_retry_delay)
+        logger.error(f"BROKER_{action_name}_FAILED after {retries} retries: {last_error}")
+        return None
+
     def buy(self, symbol: str, price: float, volume: int) -> OrderResult:
-        try:
-            result = self.m_trader.buy(security=symbol, price=price, amount=volume)
-            return OrderResult(
-                success=True,
-                order_id=str(result.get("entrust_no", "")),
-                message=str(result),
-            )
-        except Exception as e:
-            return OrderResult(success=False, message=str(e))
+        _audit_log("BUY", {"symbol": symbol, "price": price, "volume": volume})
+        logger.info(f"BROKER_BUY symbol={symbol} price={price} volume={volume}")
+
+        result = self._with_retry("BUY", lambda: self.m_trader.buy(security=symbol, price=price, amount=volume))
+        if result is None:
+            _audit_log("BUY_FAILED", {"symbol": symbol, "price": price, "volume": volume, "error": "重试失败"})
+            return OrderResult(success=False, message="买入失败：重试后仍无法连接券商客户端")
+
+        order_result = OrderResult(
+            success=True,
+            order_id=str(result.get("entrust_no", "")),
+            message=str(result),
+        )
+        logger.info(f"BROKER_BUY_RESULT order_id={order_result.order_id}")
+        _audit_log("BUY_RESULT", {"order_id": order_result.order_id, "message": order_result.message})
+        return order_result
 
     def sell(self, symbol: str, price: float, volume: int) -> OrderResult:
-        try:
-            result = self.m_trader.sell(security=symbol, price=price, amount=volume)
-            return OrderResult(
-                success=True,
-                order_id=str(result.get("entrust_no", "")),
-                message=str(result),
-            )
-        except Exception as e:
-            return OrderResult(success=False, message=str(e))
+        _audit_log("SELL", {"symbol": symbol, "price": price, "volume": volume})
+        logger.info(f"BROKER_SELL symbol={symbol} price={price} volume={volume}")
+
+        result = self._with_retry("SELL", lambda: self.m_trader.sell(security=symbol, price=price, amount=volume))
+        if result is None:
+            _audit_log("SELL_FAILED", {"symbol": symbol, "price": price, "volume": volume, "error": "重试失败"})
+            return OrderResult(success=False, message="卖出失败：重试后仍无法连接券商客户端")
+
+        order_result = OrderResult(
+            success=True,
+            order_id=str(result.get("entrust_no", "")),
+            message=str(result),
+        )
+        logger.info(f"BROKER_SELL_RESULT order_id={order_result.order_id}")
+        _audit_log("SELL_RESULT", {"order_id": order_result.order_id, "message": order_result.message})
+        return order_result
 
     def cancel(self, order_id: str) -> OrderResult:
-        try:
-            result = self.m_trader.cancel_entrust(entrust_no=order_id)
-            return OrderResult(success=True, message=str(result))
-        except Exception as e:
-            return OrderResult(success=False, message=str(e))
+        _audit_log("CANCEL", {"order_id": order_id})
+        logger.info(f"BROKER_CANCEL order_id={order_id}")
+
+        result = self._with_retry("CANCEL", lambda: self.m_trader.cancel_entrust(entrust_no=order_id))
+        if result is None:
+            return OrderResult(success=False, message="撤单失败：重试后仍无法连接券商客户端")
+
+        order_result = OrderResult(success=True, message=str(result))
+        logger.info(f"BROKER_CANCEL_RESULT order_id={order_id}")
+        _audit_log("CANCEL_RESULT", {"order_id": order_id, "message": order_result.message})
+        return order_result
 
     def get_positions(self) -> list[Position]:
-        try:
+        def _get():
             raw = self.m_trader.position
+            if not raw:
+                return []
             positions = []
-            for item in raw if isinstance(raw, list) else [raw]:
+            items = raw if isinstance(raw, list) else [raw]
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
                 positions.append(Position(
                     symbol=str(item.get("证券代码", "")),
                     name=str(item.get("证券名称", "")),
@@ -162,26 +265,69 @@ class EasyTraderBroker(BrokerBase):
                     pnl_pct=float(item.get("盈亏%", 0)),
                 ))
             return positions
-        except Exception as e:
-            print(f"获取持仓失败: {e}")
-            return []
+
+        result = self._with_retry("POSITIONS", _get)
+        return result if result is not None else []
 
     def get_account(self) -> AccountInfo:
-        try:
+        def _get():
             raw = self.m_trader.balance
             if isinstance(raw, list):
-                raw = raw[0]
+                raw = raw[0] if raw else {}
             return AccountInfo(
                 total_assets=float(raw.get("总资产", 0)),
                 cash=float(raw.get("可用金额", 0)),
                 market_value=float(raw.get("股票市值", 0)),
             )
-        except Exception as e:
-            print(f"获取账户信息失败: {e}")
-            return AccountInfo()
+
+        result = self._with_retry("ACCOUNT", _get)
+        return result if result is not None else AccountInfo()
+
+    def get_today_entrusts(self) -> list[Entrust]:
+        def _get():
+            raw = self.m_trader.today_entrusts
+            if not raw:
+                return []
+            entrusts = []
+            items = raw if isinstance(raw, list) else [raw]
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                entrusts.append(Entrust(
+                    entrust_no=str(item.get("委托编号", "")),
+                    symbol=str(item.get("证券代码", "")),
+                    name=str(item.get("证券名称", "")),
+                    direction=str(item.get("操作", "")),
+                    price=float(item.get("委托价格", 0)),
+                    volume=int(item.get("委托数量", 0)),
+                    filled_volume=int(item.get("成交数量", 0)),
+                    status=str(item.get("状态", "")),
+                    order_time=str(item.get("委托时间", "")),
+                ))
+            return entrusts
+
+        result = self._with_retry("ENTRUSTS", _get)
+        return result if result is not None else []
+
+    def get_today_trades(self) -> list[dict]:
+        def _get():
+            raw = self.m_trader.today_trades
+            if not raw:
+                return []
+            trades = []
+            items = raw if isinstance(raw, list) else [raw]
+            for item in items:
+                if isinstance(item, dict):
+                    trades.append(item)
+            return trades
+
+        result = self._with_retry("TRADES", _get)
+        return result if result is not None else []
 
     def disconnect(self) -> None:
+        logger.info("BROKER_DISCONNECT")
         self.m_trader = None
+        self.m_connected = False
 
 
 class QMTBroker(BrokerBase):
@@ -195,6 +341,11 @@ class QMTBroker(BrokerBase):
         self.m_qmt_path = qmt_path
         self.m_xt = None
         self.m_trader = None
+        self.m_connected = False
+
+    @property
+    def is_connected(self) -> bool:
+        return self.m_connected
 
     def connect(self) -> bool:
         try:
@@ -204,9 +355,10 @@ class QMTBroker(BrokerBase):
             path = self.m_qmt_path or r"C:\国金QMT交易端\userdata_mini"
             session_id = self.m_xt.create_trader_session(path=path)
             self.m_trader = session_id
+            self.m_connected = True
             return True
         except Exception as e:
-            print(f"QMT 连接失败: {e}")
+            logger.error(f"QMT 连接失败: {e}")
             return False
 
     def buy(self, symbol: str, price: float, volume: int) -> OrderResult:
@@ -246,6 +398,7 @@ class QMTBroker(BrokerBase):
 
     def disconnect(self) -> None:
         self.m_trader = None
+        self.m_connected = False
 
 
 class SimBroker(BrokerBase):
@@ -254,6 +407,11 @@ class SimBroker(BrokerBase):
     def __init__(self, initial_cash: float = 100_000.0):
         from trader.simulator import Simulator
         self.m_simulator = Simulator(initial_cash=initial_cash)
+        self.m_connected = True
+
+    @property
+    def is_connected(self) -> bool:
+        return True
 
     def connect(self) -> bool:
         return True
@@ -297,8 +455,6 @@ class SimBroker(BrokerBase):
 
 def create_broker(config_path: str = "config/settings.yaml") -> BrokerBase:
     """根据配置创建券商实例"""
-    from pathlib import Path
-
     config_file = Path(__file__).parent.parent / config_path
     if config_file.exists():
         with open(config_file) as f:

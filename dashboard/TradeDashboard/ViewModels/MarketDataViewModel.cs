@@ -126,6 +126,7 @@ public partial class MarketDataViewModel : ObservableObject
     private async Task AddToFavoritesAsync()
     {
         if (SelectedStock is null) return;
+        InteractionLogService.Write("行情", $"添加收藏: {SelectedStock.Symbol}");
         await m_DataService.AddFavoriteStockAsync(SelectedStock.Symbol);
         await LoadFavoritesAsync();
         IsCurrentStockFavorite = true;
@@ -134,6 +135,7 @@ public partial class MarketDataViewModel : ObservableObject
     [RelayCommand]
     private async Task RemoveFromFavoritesAsync(string symbol)
     {
+        InteractionLogService.Write("行情", $"移除收藏: {symbol}");
         await m_DataService.RemoveFavoriteStockAsync(symbol);
         await LoadFavoritesAsync();
         if (SelectedStock?.Symbol == symbol)

@@ -64,6 +64,7 @@ public partial class LogViewerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void ToggleMonitoring()
     {
+        InteractionLogService.Write("日志", IsMonitoring ? "停止监控" : "开始监控");
         if (IsMonitoring)
         {
             m_LogMonitor.StopMonitoring();
@@ -80,12 +81,14 @@ public partial class LogViewerViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void Clear()
     {
+        InteractionLogService.Write("日志", "清空日志");
         LogEntries.Clear();
     }
 
     [RelayCommand]
     private void LoadFromFile()
     {
+        InteractionLogService.Write("日志", "从文件加载日志");
         var logPath = GetLogPath();
         var existing = m_LogMonitor.LoadExistingLogs(logPath);
         LogEntries = new ObservableCollection<LogEntry>(existing);

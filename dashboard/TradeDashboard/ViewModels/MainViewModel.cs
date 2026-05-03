@@ -59,6 +59,10 @@ public partial class MainViewModel : ObservableObject
         LogViewer = logViewer;
         Configuration = configuration;
 
+        Trading.StatusLog += OnTradingStatusLog;
+
+        InteractionLogService.LogChanged += OnGlobalLogChanged;
+
         _ = InitializeAsync();
     }
 
@@ -69,6 +73,7 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task RefreshAsync()
     {
+        InteractionLogService.Write("全局", "刷新所有数据");
         StatusMessage = "Refreshing...";
         try
         {
@@ -89,11 +94,28 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty] private int _selectedTabIndex;
     [ObservableProperty] private string _statusMessage = "Ready";
-    [ObservableProperty] private string _statusBarText = "Trade Dashboard v1.0";
+    [ObservableProperty] private string _versionText = "交易仪表盘 v1.0";
+    [ObservableProperty] private string _interactionLog = "";
+
+    private void OnTradingStatusLog(string message)
+    {
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            InteractionLog = message;
+        });
+    }
+
+    private void OnGlobalLogChanged(string message)
+    {
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            InteractionLog = message;
+        });
+    }
 
     private async Task InitializeAsync()
     {
-        StatusBarText = "检查数据更新...";
+        InteractionLog = "检查数据更新...";
         try
         {
             await CheckDataUpdateAsync();
@@ -103,7 +125,7 @@ public partial class MainViewModel : ObservableObject
             // 非阻塞：更新失败不阻止启动
         }
 
-        StatusBarText = "加载数据...";
+        InteractionLog = "加载数据...";
         try
         {
             await Task.WhenAll(
@@ -115,11 +137,11 @@ public partial class MainViewModel : ObservableObject
                 News.RefreshAsync()
             );
             News.StartAutoRefresh();
-            StatusBarText = "交易仪表盘 v1.0";
+            InteractionLog = "数据加载完成";
         }
         catch (Exception ex)
         {
-            StatusBarText = $"加载异常: {ex.Message}";
+            InteractionLog = $"加载异常: {ex.Message}";
         }
     }
 

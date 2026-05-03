@@ -83,6 +83,7 @@ public partial class NewsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     public async Task RefreshAsync()
     {
+        InteractionLogService.Write("资讯", "刷新资讯");
         if (IsLoading)
         {
             return;
@@ -112,6 +113,7 @@ public partial class NewsViewModel : ObservableObject, IDisposable
     [RelayCommand]
     private void OpenUrl()
     {
+        InteractionLogService.Write("资讯", $"打开链接: {SelectedNewsItem?.Title}");
         if (SelectedNewsItem is null || !SelectedNewsItem.HasUrl)
         {
             return;

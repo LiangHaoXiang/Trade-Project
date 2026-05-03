@@ -74,8 +74,15 @@
 
             <!-- 左：下单面板 -->
             <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,8,0">
-                <StackPanel Margin="8">
-                    <TextBlock Text="模拟下单" Style="{StaticResource SectionHeaderStyle}"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,0,8">
+                <StackPanel Margin="0,8,0,8">
+                    <Grid Margin="0,0,0,4">
+                        <TextBlock Text="{Binding ModeLabel}" Style="{StaticResource SectionHeaderStyle}"
+                                   HorizontalAlignment="Left"/>
+                        <TextBlock Text="{Binding BrokerStatusText}" Foreground="#a6adc8" FontSize="11"
+                                   HorizontalAlignment="Right" VerticalAlignment="Center"
+                                   Visibility="{Binding IsLiveMode, Converter={StaticResource BoolToVis}}"/>
+                    </Grid>
 
                     <TextBlock Text="股票代码" Foreground="#a6adc8" Margin="0,8,0,4"/>
                     <TextBox Text="{Binding OrderSymbol}" FontSize="14"/>
@@ -98,11 +105,13 @@
                         </Grid.ColumnDefinitions>
                         <TextBox Text="{Binding OrderVolume}" FontSize="14"/>
                         <Button Grid.Column="1" Content="全仓" Command="{Binding FillMaxVolumeCommand}"
+                                Click="OnFillMaxVolumeClick"
                                 Style="{StaticResource ActionButtonStyle}" Margin="4,0,0,0" Padding="8,4"/>
                     </Grid>
 
                     <Button Content="提交委托"
                             Command="{Binding SubmitOrderCommand}"
+                            Click="OnSubmitOrderClick"
                             Style="{StaticResource PrimaryButtonStyle}"
                             Margin="0,16,0,0" Height="36"/>
 
@@ -110,11 +119,28 @@
 
                     <Separator Margin="0,16,0,8" Background="#313244"/>
 
-                    <Button Content="重置模拟账户"
-                            Command="{Binding ResetAccountCommand}"
-                            Style="{StaticResource ActionButtonStyle}"
-                            HorizontalAlignment="Stretch" FontSize="12"/>
+                    <Grid>
+                        <Button Content="重置模拟账户"
+                                Command="{Binding ResetAccountCommand}"
+                                Click="OnResetAccountClick"
+                                Style="{StaticResource ActionButtonStyle}"
+                                HorizontalAlignment="Stretch" FontSize="12"
+                                Visibility="{Binding CanReset, Converter={StaticResource BoolToVis}}"/>
+                        <StackPanel Visibility="{Binding IsLiveMode, Converter={StaticResource BoolToVis}}">
+                            <Button Content="连接券商"
+                                    Command="{Binding ConnectLiveCommand}"
+                                    Click="OnConnectLiveClick"
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    HorizontalAlignment="Stretch" FontSize="12" Margin="0,0,0,4"/>
+                            <Button Content="断开连接"
+                                    Command="{Binding DisconnectLiveCommand}"
+                                    Click="OnDisconnectLiveClick"
+                                    Style="{StaticResource ActionButtonStyle}"
+                                    HorizontalAlignment="Stretch" FontSize="12"/>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
+                </ScrollViewer>
             </Border>
 
             <!-- 右：持仓 + 委托 -->

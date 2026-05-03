@@ -40,6 +40,7 @@ public partial class EquityCurveViewModel : ObservableObject
     [RelayCommand]
     public async Task LoadLatestAsync()
     {
+        InteractionLogService.Write("资金曲线", "加载最新");
         IsLoading = true;
         try
         {

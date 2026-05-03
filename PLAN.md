@@ -335,6 +335,7 @@ AKShare / Tushare
 - ✅ UI 自动化测试框架（FlaUI.UIA3 + xUnit，覆盖主要页面）
 - ✅ C# 代码规范化（m_/s_/k_ 前缀、花括号另起一行、#region 中文分组）
 - ✅ 策略参数动态渲染（StrategyParameterRegistry + StrategyParamEntry）
+- ✅ 底部状态栏交互日志（InteractionLogService 全局静态服务，所有按钮操作实时显示在状态栏）
 
 ### 待完善
 
@@ -343,6 +344,7 @@ AKShare / Tushare
 - 消息通知（邮件/微信告警）
 - 实盘对接（easytrader/QMT 实时下单）
 - 定时调度集成
+- 交互日志持久化（可选，当前仅显示最新一条）
 
 ### WPF UI 规范（必须遵循）
 

@@ -47,6 +47,7 @@ public partial class ConfigurationViewModel : ObservableObject
     [RelayCommand]
     private void Save()
     {
+        InteractionLogService.Write("配置", "保存配置");
         try
         {
             m_ConfigService.Save(Config);
@@ -55,12 +56,14 @@ public partial class ConfigurationViewModel : ObservableObject
         catch (Exception ex)
         {
             SaveMessage = $"Error saving: {ex.Message}";
+            InteractionLogService.Write("配置", $"保存失败: {ex.Message}");
         }
     }
 
     [RelayCommand]
     private void Reload()
     {
+        InteractionLogService.Write("配置", "重载配置");
         Config = m_ConfigService.Load();
         SaveMessage = "Configuration reloaded";
     }

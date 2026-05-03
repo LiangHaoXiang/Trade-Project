@@ -39,6 +39,7 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     public async Task RefreshAsync()
     {
+        InteractionLogService.Write("总览", "刷新总览数据");
         IsLoading = true;
         try
         {

@@ -408,7 +408,192 @@ Python 和 C# 共享同一个 SQLite 数据库文件（路径配置于 `config/s
 
 ---
 
-## 4. 变更日志
+## 4. 实盘交易接口
+
+> 通过 `config/settings.yaml` 中 `broker.type` 切换模拟/实盘模式。
+> 实盘模式需安装 easytrader 并打开同花顺客户端。
+> 所有交易命令均输出 JSON（含 `JSON_OUTPUT_START` 标记）。
+
+### 4.1 连接券商
+
+**命令：** `python main.py trade-connect --json`
+
+**Python 输出 JSON 格式：**
+
+```json
+{
+  "connected": true,
+  "broker_type": "EasyTraderBroker"
+}
+```
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `connected` | `bool` | 是否连接成功 |
+| `broker_type` | `string` | 券商实现类名 |
+
+### 4.2 断开连接
+
+**命令：** `python main.py trade-disconnect --json`
+
+**Python 输出 JSON 格式：**
+
+```json
+{
+  "connected": false
+}
+```
+
+### 4.3 连接状态
+
+**命令：** `python main.py trade-status --json`
+
+**Python 输出 JSON 格式：**
+
+```json
+{
+  "connected": true,
+  "broker_type": "EasyTraderBroker"
+}
+```
+
+### 4.4 账户信息
+
+**命令：** `python main.py trade-account --json`
+
+**Python 输出 JSON 格式：**
+
+```json
+{
+  "total_assets": 150000.00,
+  "cash": 50000.00,
+  "market_value": 100000.00,
+  "positions": []
+}
+```
+
+| JSON 字段 | C# 类型 | 说明 |
+|-----------|---------|------|
+| `total_assets` | `double` | 总资产 |
+| `cash` | `double` | 可用资金 |
+| `market_value` | `double` | 持仓市值 |
+| `positions` | `list` | 持仓列表（见 4.5） |
+
+### 4.5 持仓查询
+
+**命令：** `python main.py trade-positions --json`
+
+**Python 输出 JSON 格式：**
+
+```json
+[
+  {
+    "symbol": "600000",
+    "name": "浦发银行",
+    "volume": 1000,
+    "available_volume": 1000,
+    "cost_price": 10.50,
+    "current_price": 11.20,
+    "pnl": 700.00,
+    "pnl_pct": 6.67
+  }
+]
+```
+
+| JSON 字段 | C# 类型 | 说明 |
+|-----------|---------|------|
+| `symbol` | `string` | 股票代码 |
+| `name` | `string` | 股票名称 |
+| `volume` | `int` | 持仓数量 |
+| `available_volume` | `int` | 可用数量 |
+| `cost_price` | `double` | 成本价 |
+| `current_price` | `double` | 当前价 |
+| `pnl` | `double` | 浮动盈亏 |
+| `pnl_pct` | `double` | 盈亏百分比 |
+
+### 4.6 买入
+
+**命令：** `python main.py trade-buy --symbol <代码> --price <价格> --volume <数量> --json`
+
+**Python 输出 JSON 格式：**
+
+```json
+{
+  "success": true,
+  "order_id": "12345",
+  "message": "{'entrust_no': '12345'}",
+  "filled_price": 0.0,
+  "filled_volume": 0
+}
+```
+
+| JSON 字段 | C# 类型 | 说明 |
+|-----------|---------|------|
+| `success` | `bool` | 是否委托成功 |
+| `order_id` | `string` | 委托编号 |
+| `message` | `string` | 返回信息 |
+| `filled_price` | `double` | 成交价（实盘为0，需查询成交） |
+| `filled_volume` | `int` | 成交量（实盘为0，需查询成交） |
+
+### 4.7 卖出
+
+**命令：** `python main.py trade-sell --symbol <代码> --price <价格> --volume <数量> --json`
+
+输出格式同 4.6 买入。
+
+### 4.8 撤单
+
+**命令：** `python main.py trade-cancel --order-id <委托编号> --json`
+
+**Python 输出 JSON 格式：**
+
+```json
+{
+  "success": true,
+  "order_id": "",
+  "message": "撤单成功",
+  "filled_price": 0.0,
+  "filled_volume": 0
+}
+```
+
+### 4.9 当日委托查询
+
+**命令：** `python main.py trade-entrusts --json`
+
+**Python 输出 JSON 格式：**
+
+```json
+[
+  {
+    "entrust_no": "12345",
+    "symbol": "600000",
+    "name": "浦发银行",
+    "direction": "买入",
+    "price": 10.50,
+    "volume": 1000,
+    "filled_volume": 1000,
+    "status": "已成",
+    "order_time": "09:30:15"
+  }
+]
+```
+
+| JSON 字段 | C# 类型 | 说明 |
+|-----------|---------|------|
+| `entrust_no` | `string` | 委托编号 |
+| `symbol` | `string` | 股票代码 |
+| `name` | `string` | 股票名称 |
+| `direction` | `string` | 买卖方向（中文） |
+| `price` | `double` | 委托价格 |
+| `volume` | `int` | 委托数量 |
+| `filled_volume` | `int` | 成交数量 |
+| `status` | `string` | 委托状态 |
+| `order_time` | `string` | 委托时间 |
+
+---
+
+## 5. 变更日志
 
 | 日期 | 变更内容 | 影响端 |
 |------|---------|--------|
@@ -417,3 +602,4 @@ Python 和 C# 共享同一个 SQLite 数据库文件（路径配置于 `config/s
 | 2026-05-01 | 新增 `2.7 新闻资讯` 接口：多源聚合（东方财富+新浪），AKShare 免费接口 | Python 输出 + C# 解析 |
 | 2026-05-02 | 新增 `--strategy` 参数：支持 7 种策略选择（双均线/均值回归/动量/MACD背离/RSI超买超卖/布林带突破/KDJ金叉死叉） | Python 输入 + C# 传入 |
 | 2026-05-03 | 新增 `--strategy-params` 参数：各策略独立参数以 JSON 传递，废弃 `--short-window` / `--long-window`；新增策略参数 Schema 定义 | Python 输入 + C# 传入 + 契约文档 |
+| 2026-05-03 | 新增 `第4节 实盘交易接口`：trade-connect/disconnect/status/account/positions/buy/sell/cancel/entrusts 共 9 个 CLI 命令 | Python 输出 + C# 解析 |

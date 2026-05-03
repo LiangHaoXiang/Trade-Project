@@ -60,7 +60,12 @@
 
         <!-- Status Bar -->
         <Border Grid.Row="2" Background="#181825" Padding="12,6">
-            <TextBlock Text="{Binding StatusBarText}" Foreground="#6c7086" FontSize="11"/>
+            <Grid>
+                <TextBlock Text="{Binding VersionText}" Foreground="#6c7086" FontSize="11"
+                           HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding InteractionLog}" Foreground="#a6adc8" FontSize="11"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
         </Border>
 
         <!-- Toast 通知 -->
