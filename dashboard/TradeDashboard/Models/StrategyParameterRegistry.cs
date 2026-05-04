@@ -4,6 +4,24 @@ namespace TradeDashboard.Models;
 
 public static class StrategyParameterRegistry
 {
+    public static readonly FrozenDictionary<string, string> ChineseToEnglishKey = new Dictionary<string, string>
+    {
+        ["双均线交叉"] = "ma_cross",
+        ["均值回归"] = "mean_reversion",
+        ["动量选股"] = "momentum",
+        ["MACD背离"] = "macd_divergence",
+        ["RSI超买超卖"] = "rsi_extreme",
+        ["布林带突破"] = "bollinger_breakout",
+        ["KDJ金叉死叉"] = "kdj_cross",
+        ["神奇九转"] = "td_sequential",
+        ["波段趋势"] = "wave_trend",
+    }.ToFrozenDictionary();
+
+    public static readonly FrozenDictionary<string, string> EnglishKeyToChinese = ChineseToEnglishKey
+        .ToFrozenDictionary(kv => kv.Value, kv => kv.Key);
+
+    public static readonly string[] DisplayNames = [.. ChineseToEnglishKey.Keys];
+
     public static readonly FrozenDictionary<string, StrategyParameterDefinition[]> Definitions = new Dictionary<string, StrategyParameterDefinition[]>
     {
         ["双均线交叉"] = [

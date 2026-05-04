@@ -15,10 +15,9 @@ trading:
   stamp_tax: 0.001
   slippage: 0.001
 broker:
-  type: easytrader
+  type: sim
   client: ths
   exe_path: D:\个人\股票\同花顺\xiadan.exe
   qmt_path: ''
   max_single_order_amount: 50000
   confirm_before_trade: true
-  cache_ttl_seconds: 30

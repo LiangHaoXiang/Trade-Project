@@ -61,6 +61,14 @@ public partial class DashboardView : UserControl
         if (e.NewValue is DashboardViewModel newVm)
         {
             newVm.EquityDataChanged += OnEquityDataChanged;
+            newVm.PropertyChanged += (s, args) =>
+            {
+                if (args.PropertyName == nameof(DashboardViewModel.IsBacktestMode))
+                {
+                    UpdateDashModeButtons(newVm.IsBacktestMode);
+                }
+            };
+            UpdateDashModeButtons(newVm.IsBacktestMode);
         }
     }
 
@@ -353,6 +361,34 @@ public partial class DashboardView : UserControl
             return $"{value / 1_0000:F2} 万";
         }
         return $"{value:N2}";
+    }
+
+    #endregion
+
+    #region 模式切换
+
+    private void UpdateDashModeButtons(bool isBacktest)
+    {
+        if (BtnDashBacktest == null || BtnDashSim == null) return;
+
+        BtnDashBacktest.Style = (Style)FindResource(isBacktest ? "PrimaryButtonStyle" : "ActionButtonStyle");
+        BtnDashSim.Style = (Style)FindResource(isBacktest ? "ActionButtonStyle" : "PrimaryButtonStyle");
+    }
+
+    private void OnDashBacktestClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is DashboardViewModel vm)
+        {
+            vm.TradeMode = DashboardViewModel.BacktestMode;
+        }
+    }
+
+    private void OnDashSimClick(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is DashboardViewModel vm)
+        {
+            vm.TradeMode = DashboardViewModel.SimMode;
+        }
     }
 
     #endregion

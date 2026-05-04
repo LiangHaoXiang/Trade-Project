@@ -43,17 +43,7 @@
 
                     <TextBlock Text="策略" Foreground="#89b4fa" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
                     <TextBlock Text="交易策略" Foreground="#a6adc8" Margin="0,4,0,4"/>
-                    <ComboBox SelectedValue="{Binding Config.Strategy.SelectedStrategy}" SelectedValuePath="Content" IsEditable="True">
-                        <ComboBoxItem Content="ma_cross"/>
-                        <ComboBoxItem Content="mean_reversion"/>
-                        <ComboBoxItem Content="momentum"/>
-                        <ComboBoxItem Content="bollinger_breakout"/>
-                        <ComboBoxItem Content="kdj_cross"/>
-                        <ComboBoxItem Content="macd_divergence"/>
-                        <ComboBoxItem Content="rsi_extreme"/>
-                        <ComboBoxItem Content="td_sequential"/>
-                        <ComboBoxItem Content="wave_trend"/>
-                    </ComboBox>
+                    <ComboBox ItemsSource="{Binding AvailableStrategies}" SelectedItem="{Binding SelectedStrategyDisplay}"/>
                 </StackPanel>
             </Border>
 

@@ -9,6 +9,8 @@
             </ResourceDictionary.MergedDictionaries>
             <c:DirectionToBrushConverter x:Key="DirToBrush"/>
             <c:DirectionToTextConverter x:Key="DirToText"/>
+            <c:StatusToTextConverter x:Key="StatusToText"/>
+            <c:BoolToVisibilityConverter x:Key="BoolToVis"/>
         </ResourceDictionary>
     </UserControl.Resources>
 
@@ -20,6 +22,14 @@
 
         <!-- Filter Bar -->
         <WrapPanel Grid.Row="0" Margin="0,0,0,12" ItemHeight="30">
+            <StackPanel Orientation="Horizontal" Margin="0,0,12,0">
+                <Button x:Name="BtnBacktest" Content="回测交易"
+                        Click="OnBacktestModeClick"
+                        Style="{StaticResource PrimaryButtonStyle}" FontSize="12" Padding="10,4"/>
+                <Button x:Name="BtnSim" Content="模拟盘交易"
+                        Click="OnSimModeClick"
+                        Style="{StaticResource ActionButtonStyle}" FontSize="12" Padding="10,4" Margin="2,0,0,0"/>
+            </StackPanel>
             <StackPanel Orientation="Horizontal" Width="130">
                 <TextBlock Text="代码:" VerticalAlignment="Center" Margin="0,0,4,0"/>
                 <TextBox Text="{Binding FilterSymbol, UpdateSourceTrigger=PropertyChanged}" Width="88" Padding="8,6" TextChanged="TextBox_TextChanged"/>
@@ -38,11 +48,12 @@
             </StackPanel>
             <Button Content="筛选" Command="{Binding ApplyFilterCommand}" Style="{StaticResource ActionButtonStyle}"/>
             <Button Content="重置" Command="{Binding ResetFilterCommand}" Style="{StaticResource ActionButtonStyle}" Margin="4,0,0,0"/>
+            <Button Content="清空" Command="{Binding ClearDataCommand}" Style="{StaticResource ActionButtonStyle}" Margin="4,0,0,0"/>
             <Button Content="刷新" Command="{Binding LoadDataCommand}" Style="{StaticResource ActionButtonStyle}" Margin="4,0,0,0"/>
         </WrapPanel>
 
-        <!-- Trade Data Grid -->
-        <Border Grid.Row="1" Style="{StaticResource CardStyle}">
+        <!-- Backtest Trades -->
+        <Border Grid.Row="1" Style="{StaticResource CardStyle}" Visibility="{Binding IsBacktestMode, Converter={StaticResource BoolToVis}}">
             <DataGrid ItemsSource="{Binding FilteredTradesView}" SelectedItem="{Binding SelectedTrade}" ColumnWidth="*">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="日期" Binding="{Binding TradeDate, StringFormat='{}{0:yyyy-MM-dd}'}" Width="90">
@@ -90,6 +101,88 @@
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
                                 <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Margin" Value="6,3"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="原因" Binding="{Binding Reason}" Width="*">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Margin" Value="6,3"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Sim Trades -->
+        <Border Grid.Row="1">
+            <Border.Style>
+                <Style TargetType="Border" BasedOn="{StaticResource CardStyle}">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsBacktestMode}" Value="False">
+                            <Setter Property="Visibility" Value="Visible"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <DataGrid ItemsSource="{Binding FilteredSimOrdersView}" SelectedItem="{Binding SelectedSimOrder}" ColumnWidth="*">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="时间" Binding="{Binding OrderTime, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}" Width="140">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Center"/>
+                                <Setter Property="Margin" Value="6,3"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="代码" Binding="{Binding Symbol}" Width="80">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Center"/>
+                                <Setter Property="Margin" Value="6,3"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTemplateColumn Header="方向" Width="60">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Direction, Converter={StaticResource DirToText}}"
+                                           Foreground="{Binding Direction, Converter={StaticResource DirToBrush}}"
+                                           FontWeight="Bold" TextAlignment="Center" Margin="6,3"/>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="价格" Binding="{Binding Price, StringFormat='{}{0:N2}'}" Width="80">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Margin" Value="6,3"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="数量" Binding="{Binding Volume, StringFormat='{}{0:N0}'}" Width="70">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Margin" Value="6,3"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="金额" Binding="{Binding Amount, StringFormat='{}{0:N2}'}" Width="100">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Right"/>
+                                <Setter Property="Margin" Value="6,3"/>
+                            </Style>
+                        </DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="状态" Binding="{Binding Status, Converter={StaticResource StatusToText}}" Width="70">
+                        <DataGridTextColumn.ElementStyle>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="TextAlignment" Value="Center"/>
                                 <Setter Property="Margin" Value="6,3"/>
                             </Style>
                         </DataGridTextColumn.ElementStyle>

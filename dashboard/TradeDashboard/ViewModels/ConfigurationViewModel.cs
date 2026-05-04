@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -22,6 +23,7 @@ public partial class ConfigurationViewModel : ObservableObject
     public ConfigurationViewModel(IConfigurationService configService)
     {
         m_ConfigService = configService;
+        AvailableStrategies = StrategyParameterRegistry.DisplayNames;
         _ = LoadAsync();
     }
 
@@ -33,6 +35,8 @@ public partial class ConfigurationViewModel : ObservableObject
     public async Task LoadAsync()
     {
         Config = m_ConfigService.Load();
+        SelectedStrategyDisplay = StrategyParameterRegistry.EnglishKeyToChinese.TryGetValue(
+            Config.Strategy.SelectedStrategy, out var cn) ? cn : Config.Strategy.SelectedStrategy;
         IsLoaded = true;
     }
 
@@ -43,6 +47,28 @@ public partial class ConfigurationViewModel : ObservableObject
     [ObservableProperty] private AppConfiguration _config = new();
     [ObservableProperty] private bool _isLoaded;
     [ObservableProperty] private string _saveMessage = "";
+
+    public IReadOnlyList<string> AvailableStrategies { get; }
+
+    private string _selectedStrategyDisplay = "";
+    public string SelectedStrategyDisplay
+    {
+        get => _selectedStrategyDisplay;
+        set
+        {
+            if (SetProperty(ref _selectedStrategyDisplay, value))
+            {
+                if (StrategyParameterRegistry.ChineseToEnglishKey.TryGetValue(value, out var engKey))
+                {
+                    Config.Strategy.SelectedStrategy = engKey;
+                }
+                else
+                {
+                    Config.Strategy.SelectedStrategy = value;
+                }
+            }
+        }
+    }
 
     [RelayCommand]
     private void Save()
@@ -65,6 +91,8 @@ public partial class ConfigurationViewModel : ObservableObject
     {
         InteractionLogService.Write("配置", "重载配置");
         Config = m_ConfigService.Load();
+        SelectedStrategyDisplay = StrategyParameterRegistry.EnglishKeyToChinese.TryGetValue(
+            Config.Strategy.SelectedStrategy, out var cn) ? cn : Config.Strategy.SelectedStrategy;
         SaveMessage = "Configuration reloaded";
     }
 
