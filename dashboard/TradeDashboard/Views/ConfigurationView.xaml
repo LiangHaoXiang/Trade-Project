@@ -42,25 +42,24 @@
                     <TextBox Text="{Binding Config.Data.Source}" Margin="0,0,0,16"/>
 
                     <TextBlock Text="策略" Foreground="#89b4fa" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Grid.Column="0" Margin="0,0,8,0">
-                            <TextBlock Text="短周期" Foreground="#a6adc8" Margin="0,0,0,4"/>
-                            <TextBox Text="{Binding Config.Strategy.Default.ShortWindow}"/>
-                        </StackPanel>
-                        <StackPanel Grid.Column="1">
-                            <TextBlock Text="长周期" Foreground="#a6adc8" Margin="0,0,0,4"/>
-                            <TextBox Text="{Binding Config.Strategy.Default.LongWindow}"/>
-                        </StackPanel>
-                    </Grid>
+                    <TextBlock Text="交易策略" Foreground="#a6adc8" Margin="0,4,0,4"/>
+                    <ComboBox SelectedValue="{Binding Config.Strategy.SelectedStrategy}" SelectedValuePath="Content" IsEditable="True">
+                        <ComboBoxItem Content="ma_cross"/>
+                        <ComboBoxItem Content="mean_reversion"/>
+                        <ComboBoxItem Content="momentum"/>
+                        <ComboBoxItem Content="bollinger_breakout"/>
+                        <ComboBoxItem Content="kdj_cross"/>
+                        <ComboBoxItem Content="macd_divergence"/>
+                        <ComboBoxItem Content="rsi_extreme"/>
+                        <ComboBoxItem Content="td_sequential"/>
+                        <ComboBoxItem Content="wave_trend"/>
+                    </ComboBox>
                 </StackPanel>
             </Border>
 
             <!-- Right Column: Risk + Trading Cost -->
             <Border Grid.Column="1" Style="{StaticResource CardStyle}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,0,8">
                 <StackPanel Margin="8">
                     <TextBlock Text="风险管理" Foreground="#89b4fa" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
                     <Grid Margin="0,0,0,16">
@@ -91,7 +90,7 @@
                     </Grid>
 
                     <TextBlock Text="交易成本" Foreground="#89b4fa" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                    <Grid>
+                    <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
@@ -110,7 +109,44 @@
                             <TextBox Text="{Binding Config.Trading.Slippage}"/>
                         </StackPanel>
                     </Grid>
+
+                    <TextBlock Text="券商配置" Foreground="#89b4fa" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <Grid Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,8,8">
+                            <TextBlock Text="模式" Foreground="#a6adc8" Margin="0,0,0,4"/>
+                            <ComboBox SelectedValue="{Binding Config.Broker.Type}" SelectedValuePath="Content" IsEditable="True">
+                                <ComboBoxItem Content="sim"/>
+                                <ComboBoxItem Content="easytrader"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Grid.Row="0" Grid.Column="1" Margin="0,0,0,8">
+                            <TextBlock Text="客户端" Foreground="#a6adc8" Margin="0,0,0,4"/>
+                            <ComboBox SelectedValue="{Binding Config.Broker.Client}" SelectedValuePath="Content" IsEditable="True">
+                                <ComboBoxItem Content="ths"/>
+                                <ComboBoxItem Content="yh"/>
+                                <ComboBoxItem Content="ht"/>
+                            </ComboBox>
+                        </StackPanel>
+                        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,8">
+                            <TextBlock Text="客户端路径（可选）" Foreground="#a6adc8" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding Config.Broker.ExePath}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,8,0">
+                            <TextBlock Text="单笔限额" Foreground="#a6adc8" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding Config.Broker.MaxSingleOrderAmount}"/>
+                        </StackPanel>
+                    </Grid>
                 </StackPanel>
+                </ScrollViewer>
             </Border>
         </Grid>
     </Grid>

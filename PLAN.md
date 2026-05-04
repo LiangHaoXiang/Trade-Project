@@ -92,7 +92,7 @@ TradeProject/
         ├── Models/             # 数据模型（Trade/BacktestResult/DailyBar/NewsItem 等）
         ├── ViewModels/         # MVVM ViewModel（9个页面）
         ├── Views/              # XAML 视图（9个页面）
-        ├── Services/           # 服务层（数据/回测/交易/新闻/日志/配置）
+        ├── Services/           # 服务层（数据/回测/交易/新闻/日志/配置/交互日志）
         ├── Converters/         # WPF 值转换器（方向/颜色/状态/空状态）
         ├── Resources/          # 全局样式（Styles.xaml）
         └── Tests/              # FlaUI UI 自动化测试
@@ -299,7 +299,8 @@ AKShare / Tushare
 - ✅ ~~Streamlit 监控面板~~ → WPF 桌面仪表盘（9个Tab页）
 - ✅ 新闻资讯模块（news/news_fetcher.py + NewsViewModel）
 - ✅ 日志监控（Python logger.py + C# FileLogMonitorService）
-- ✅ UI 自动化测试框架（FlaUI.UIA3 + xUnit）
+- ✅ UI 自动化测试框架（FlaUI.UIA3 + xUnit，覆盖主要页面）
+- ✅ 实盘对接（easytrader 安装配置 + 券商连接 + 实盘数据展示 + 手动下单）
 - 🔜 消息通知（邮件/微信）
 
 ### 第六阶段：迭代优化（持续）
@@ -372,6 +373,62 @@ AKShare / Tushare
 **4. 空状态提示**
 - 使用 `CollectionEmptyToVisibilityConverter` 绑定 Visibility
 - 有数据时隐藏空状态文本，无数据时显示
+
+---
+
+## 7.1 实盘对接详情
+
+**技术栈：** easytrader + 同花顺客户端（ths）+ YAML 配置 + CLI 调用
+
+### 已完成功能
+
+- ✅ **easytrader 安装与配置**
+  - Python 端安装 easytrader 库
+  - 支持同花顺（ths）客户端自动连接
+  - 券商配置参数写入 `config/settings.yaml`
+
+- ✅ **券商连接管理**
+  - 连接/断开券商按钮（TradingView.xaml）
+  - 连接状态实时显示（未连接/连接中/已连接/连接失败）
+  - 连接失败原因日志输出（便于排查问题）
+  - 自动重试机制（broker.py `_with_retry`）
+
+- ✅ **实盘账户数据展示**
+  - 账户概览：总资产、可用资金、持仓市值、总盈亏、盈亏%、持仓数
+  - 持仓列表：股票代码、名称、数量、可用、成本价、现价、市值、盈亏、盈亏%
+  - 委托列表：今日委托记录（股票代码、方向、价格、数量、状态、原因）
+  - 字段映射修正：Python broker.py 与 C# SimPosition 模型字段对齐
+  - 0数量委托过滤：防止显示无效订单（`.Where(e => e.Volume > 0)`）
+
+- ✅ **实盘手动下单**
+  - 支持买入/卖出委托
+  - 单笔限额校验（从配置读取 `max_single_order_amount`）
+  - 下单结果反馈（委托号/失败原因）
+  - 下单后自动刷新账户数据
+
+- ✅ **模式切换机制**
+  - 配置页修改 broker.type 后自动生效（无需重启）
+  - Tab 切换时重新加载配置（MainViewModel.OnSelectedTabIndexChanged）
+  - 模拟/实盘模式 UI 动态切换（连接按钮/状态显示）
+
+- ✅ **跨端数据一致性**
+  - Python broker.py 字段映射：证券代码/证券名称/股票余额/可用余额/摊薄成本价/市价/浮动盈亏/盈亏比例(%)
+  - C# SimPosition 模型：override 属性支持实盘数据优先显示
+  - LiveBrokerModels.cs：Position/Order/Account 模型定义
+  - ILiveTradingService 接口：ConnectAsync/GetAccountAsync/GetPositionsAsync/GetEntrustsAsync
+
+### 关键文件
+
+| 文件 | 职责 |
+|------|------|
+| `trader/broker.py` | 券商接口封装（easytrader 连接、数据获取、重试机制） |
+| `config/settings.yaml` | 券商配置（type/client_path/max_single_order_amount） |
+| `main.py` | CLI 入口（trade-connect/trade-account/trade-positions/trade-entrusts） |
+| `Models/LiveBrokerModels.cs` | C# 实盘数据模型（Position/Order/Account/LiveOrderResult） |
+| `Services/ILiveTradingService.cs` | 实盘交易服务接口 |
+| `Services/LiveTradingService.cs` | 实盘交易服务实现（CLI 调用 Python） |
+| `ViewModels/TradingViewModel.cs` | 交易页 ViewModel（模式切换/连接管理/下单/数据刷新） |
+| `Views/TradingView.xaml` | 交易页 UI（连接按钮/状态显示/委托面板） |
 
 ---
 

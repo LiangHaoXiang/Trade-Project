@@ -15,6 +15,7 @@ dependencies = [
     "efinance>=0.5.8",
     "tushare>=1.4",
     "python-dotenv>=1.0",
+    "easytrader>=0.23",
 ]
 
 [project.optional-dependencies]

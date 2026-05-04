@@ -19,6 +19,8 @@ public partial class TradingViewModel : ObservableObject
     private readonly IDataService m_DataService;
     private readonly ILiveTradingService? m_LiveTradingService;
     private readonly IConfigurationService m_ConfigService;
+    private DateTime m_LastRefreshTime = DateTime.MinValue;
+    private const int k_MinRefreshIntervalSeconds = 5;
 
     #endregion
 
@@ -61,6 +63,8 @@ public partial class TradingViewModel : ObservableObject
 
     public async Task LoadDataAsync()
     {
+        var config = m_ConfigService.Load();
+        IsLiveMode = config.Broker.Type != "sim";
         Log($"LoadDataAsync 开始 IsLiveMode={IsLiveMode}");
         if (IsLiveMode)
         {
@@ -131,10 +135,6 @@ public partial class TradingViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(ModeLabel));
         OnPropertyChanged(nameof(CanReset));
-        if (value && m_LiveTradingService != null)
-        {
-            _ = ConnectLiveAsync();
-        }
     }
 
     public string ModeLabel => IsLiveMode ? "实盘模式" : "模拟模式";
@@ -153,25 +153,39 @@ public partial class TradingViewModel : ObservableObject
         if (m_LiveTradingService == null)
         {
             BrokerStatusText = "实盘服务未配置";
+            OrderMessage = "实盘服务未配置，请检查配置";
             return;
         }
 
         try
         {
             BrokerStatusText = "连接中...";
+            Log("正在连接券商...");
             var status = await m_LiveTradingService.ConnectAsync();
             IsBrokerConnected = status.Connected;
-            BrokerStatusText = status.Connected ? $"已连接 ({status.BrokerType})" : "连接失败";
 
             if (status.Connected)
             {
+                BrokerStatusText = $"已连接 ({status.BrokerType})";
+                OrderMessage = "";
+                Log($"连接成功 ({status.BrokerType})");
+                m_LastRefreshTime = DateTime.MinValue;
                 await RefreshLiveAsync();
+            }
+            else
+            {
+                var errMsg = !string.IsNullOrEmpty(status.Error) ? status.Error : "未知原因";
+                BrokerStatusText = "连接失败";
+                OrderMessage = $"连接失败: {errMsg}";
+                Log($"连接失败: {errMsg}");
             }
         }
         catch (Exception ex)
         {
             IsBrokerConnected = false;
-            BrokerStatusText = $"连接异常: {ex.Message}";
+            BrokerStatusText = "连接异常";
+            OrderMessage = $"连接异常: {ex.Message}";
+            Log($"连接异常: {ex.Message}");
         }
     }
 
@@ -196,47 +210,65 @@ public partial class TradingViewModel : ObservableObject
     {
         if (m_LiveTradingService == null || !IsBrokerConnected) return;
 
+        var now = DateTime.Now;
+        var elapsed = (now - m_LastRefreshTime).TotalSeconds;
+        if (elapsed < k_MinRefreshIntervalSeconds && m_LastRefreshTime != DateTime.MinValue)
+        {
+            Log($"刷新被拦截: 距上次刷新仅 {elapsed:F0} 秒（最小间隔 {k_MinRefreshIntervalSeconds} 秒）");
+            return;
+        }
+
         try
         {
             var account = await m_LiveTradingService.GetAccountAsync();
             AccountCash = account.Cash;
             AccountTotalAssets = account.TotalAssets;
             AccountMarketValue = account.MarketValue;
-            AccountPnl = 0;
-            AccountPnlPct = 0;
-            AccountPositionCount = 0;
 
             var positions = await m_LiveTradingService.GetPositionsAsync();
-            var simPositions = positions.Select(p => new SimPosition
+            var simPositions = positions.Select((p, i) => new SimPosition
             {
+                Id = i + 1,
                 Symbol = p.Symbol,
                 Name = p.Name,
                 Volume = p.Volume,
                 AvailableVolume = p.AvailableVolume,
                 CostPrice = p.CostPrice,
                 CurrentPrice = p.CurrentPrice,
+                PnlOverride = p.Pnl,
+                PnlPctOverride = p.PnlPct,
             }).ToList();
 
             Positions = new ObservableCollection<SimPosition>(simPositions);
             AccountPositionCount = simPositions.Count;
 
+            var totalPnl = simPositions.Sum(p => p.Pnl);
+            var totalCost = simPositions.Sum(p => p.CostPrice * p.Volume);
+            AccountPnl = totalPnl;
+            AccountPnlPct = totalCost > 0 ? totalPnl / totalCost * 100 : 0;
+
             var entrusts = await m_LiveTradingService.GetEntrustsAsync();
-            var simOrders = entrusts.Select((e, i) => new SimOrder
-            {
-                Id = i + 1,
-                Symbol = e.Symbol,
-                Direction = e.Direction.Contains("买") ? "BUY" : "SELL",
-                Price = e.Price,
-                Volume = e.Volume,
-                OrderTime = DateTime.Now,
-                Status = e.Status.Contains("成") ? "filled" : "pending",
-                Reason = e.Status,
-            }).ToList();
+            var simOrders = entrusts
+                .Where(e => e.Volume > 0)
+                .Select((e, i) => new SimOrder
+                {
+                    Id = i + 1,
+                    Symbol = e.Symbol,
+                    Direction = e.Direction.Contains("买") ? "BUY" : "SELL",
+                    Price = e.Price,
+                    Volume = e.Volume,
+                    OrderTime = DateTime.Now,
+                    Status = e.Status.Contains("成") ? "filled" : "pending",
+                    Reason = e.Status,
+                }).ToList();
 
             TodayOrders = new ObservableCollection<SimOrder>(simOrders);
 
             var symbols = await m_DataService.GetAvailableSymbolsAsync();
             AvailableSymbols = new ObservableCollection<string>(symbols);
+
+            m_LastRefreshTime = DateTime.Now;
+            Log($"实盘数据刷新完成 间隔={elapsed:F0}秒");
         }
         catch (Exception ex)
         {
@@ -417,6 +449,7 @@ public partial class TradingViewModel : ObservableObject
             OrderMessage = $"委托失败: {result.Message}";
         }
 
+        m_LastRefreshTime = DateTime.MinValue;
         await RefreshLiveAsync();
     }
 

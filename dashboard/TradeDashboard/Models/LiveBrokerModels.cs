@@ -4,6 +4,7 @@ public class LiveBrokerStatus
 {
     public bool Connected { get; set; }
     public string BrokerType { get; set; } = "";
+    public string Error { get; set; } = "";
 }
 
 public class LiveAccountInfo

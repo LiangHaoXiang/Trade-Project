@@ -98,7 +98,7 @@ class BrokerBase(ABC):
     """券商接口基类"""
 
     @abstractmethod
-    def connect(self) -> bool:
+    def connect(self) -> tuple[bool, str]:
         """连接券商客户端"""
 
     @abstractmethod
@@ -143,34 +143,57 @@ class EasyTraderBroker(BrokerBase):
     需要先安装 easytrader 并打开券商客户端
     """
 
-    def __init__(self, broker_type: str = "ths", exe_path: str = ""):
+    def __init__(self, broker_type: str = "ths", exe_path: str = "", cache_ttl: int = 30):
         self.m_broker_type = broker_type
         self.m_exe_path = exe_path
         self.m_trader = None
         self.m_connected = False
         self.m_max_retries = 3
         self.m_retry_delay = 2.0
+        self.m_cache_ttl = cache_ttl
+        self.m_cache_account = None
+        self.m_cache_positions = None
+        self.m_cache_entrusts = None
+        self.m_cache_time_account = 0.0
+        self.m_cache_time_positions = 0.0
+        self.m_cache_time_entrusts = 0.0
+
+    def _is_cache_valid(self, cache_time: float) -> bool:
+        return (time.time() - cache_time) < self.m_cache_ttl
+
+    def _invalidate_all_cache(self) -> None:
+        self.m_cache_account = None
+        self.m_cache_positions = None
+        self.m_cache_entrusts = None
+        self.m_cache_time_account = 0.0
+        self.m_cache_time_positions = 0.0
+        self.m_cache_time_entrusts = 0.0
 
     @property
     def is_connected(self) -> bool:
         return self.m_connected and self.m_trader is not None
 
-    def connect(self) -> bool:
+    def connect(self) -> tuple[bool, str]:
         try:
             import easytrader
             logger.info(f"BROKER_CONNECT type={self.m_broker_type} exe={self.m_exe_path or 'auto'}")
             self.m_trader = easytrader.use(self.m_broker_type)
-            if self.m_exe_path:
-                self.m_trader.prepare(exe_path=self.m_exe_path)
-            else:
-                self.m_trader.prepare()
+            connect_path = self.m_exe_path or self.m_trader._config.DEFAULT_EXE_PATH
+            if not connect_path:
+                msg = "未配置客户端路径。请在配置页填写同花顺 xiadan.exe 的完整路径"
+                logger.error(f"BROKER_CONNECT_FAILED error={msg}")
+                return False, msg
+            self.m_trader.connect(exe_path=connect_path)
             self.m_connected = True
             logger.info("BROKER_CONNECT_SUCCESS")
-            return True
+            return True, ""
         except Exception as e:
             self.m_connected = False
-            logger.error(f"BROKER_CONNECT_FAILED error={e}")
-            return False
+            err_msg = str(e)
+            logger.error(f"BROKER_CONNECT_FAILED error={err_msg}")
+            if "No windows" in err_msg:
+                err_msg = "未找到同花顺客户端窗口，请先打开同花顺并登录账户"
+            return False, err_msg
 
     def _ensure_connected(self) -> bool:
         if self.is_connected:
@@ -204,6 +227,8 @@ class EasyTraderBroker(BrokerBase):
             _audit_log("BUY_FAILED", {"symbol": symbol, "price": price, "volume": volume, "error": "重试失败"})
             return OrderResult(success=False, message="买入失败：重试后仍无法连接券商客户端")
 
+        self._invalidate_all_cache()
+
         order_result = OrderResult(
             success=True,
             order_id=str(result.get("entrust_no", "")),
@@ -222,6 +247,8 @@ class EasyTraderBroker(BrokerBase):
             _audit_log("SELL_FAILED", {"symbol": symbol, "price": price, "volume": volume, "error": "重试失败"})
             return OrderResult(success=False, message="卖出失败：重试后仍无法连接券商客户端")
 
+        self._invalidate_all_cache()
+
         order_result = OrderResult(
             success=True,
             order_id=str(result.get("entrust_no", "")),
@@ -239,12 +266,19 @@ class EasyTraderBroker(BrokerBase):
         if result is None:
             return OrderResult(success=False, message="撤单失败：重试后仍无法连接券商客户端")
 
+        self._invalidate_all_cache()
+
         order_result = OrderResult(success=True, message=str(result))
         logger.info(f"BROKER_CANCEL_RESULT order_id={order_id}")
         _audit_log("CANCEL_RESULT", {"order_id": order_id, "message": order_result.message})
         return order_result
 
     def get_positions(self) -> list[Position]:
+        now = time.time()
+        if self.m_cache_positions is not None and self._is_cache_valid(self.m_cache_time_positions):
+            logger.info("BROKER_POSITIONS_CACHE_HIT")
+            return self.m_cache_positions
+
         def _get():
             raw = self.m_trader.position
             if not raw:
@@ -259,17 +293,26 @@ class EasyTraderBroker(BrokerBase):
                     name=str(item.get("证券名称", "")),
                     volume=int(item.get("股票余额", 0)),
                     available_volume=int(item.get("可用余额", 0)),
-                    cost_price=float(item.get("成本价", 0)),
-                    current_price=float(item.get("当前价", 0)),
-                    pnl=float(item.get("盈亏", 0)),
-                    pnl_pct=float(item.get("盈亏%", 0)),
+                    cost_price=float(item.get("摊薄成本价", 0)),
+                    current_price=float(item.get("市价", 0)),
+                    pnl=float(item.get("浮动盈亏", 0)),
+                    pnl_pct=float(item.get("盈亏比例(%)", 0)),
                 ))
             return positions
 
         result = self._with_retry("POSITIONS", _get)
+        if result is not None:
+            self.m_cache_positions = result
+            self.m_cache_time_positions = time.time()
+            logger.info("BROKER_POSITIONS_CACHE_UPDATED")
         return result if result is not None else []
 
     def get_account(self) -> AccountInfo:
+        now = time.time()
+        if self.m_cache_account is not None and self._is_cache_valid(self.m_cache_time_account):
+            logger.info("BROKER_ACCOUNT_CACHE_HIT")
+            return self.m_cache_account
+
         def _get():
             raw = self.m_trader.balance
             if isinstance(raw, list):
@@ -281,9 +324,18 @@ class EasyTraderBroker(BrokerBase):
             )
 
         result = self._with_retry("ACCOUNT", _get)
+        if result is not None:
+            self.m_cache_account = result
+            self.m_cache_time_account = time.time()
+            logger.info("BROKER_ACCOUNT_CACHE_UPDATED")
         return result if result is not None else AccountInfo()
 
     def get_today_entrusts(self) -> list[Entrust]:
+        now = time.time()
+        if self.m_cache_entrusts is not None and self._is_cache_valid(self.m_cache_time_entrusts):
+            logger.info("BROKER_ENTRUSTS_CACHE_HIT")
+            return self.m_cache_entrusts
+
         def _get():
             raw = self.m_trader.today_entrusts
             if not raw:
@@ -307,6 +359,10 @@ class EasyTraderBroker(BrokerBase):
             return entrusts
 
         result = self._with_retry("ENTRUSTS", _get)
+        if result is not None:
+            self.m_cache_entrusts = result
+            self.m_cache_time_entrusts = time.time()
+            logger.info("BROKER_ENTRUSTS_CACHE_UPDATED")
         return result if result is not None else []
 
     def get_today_trades(self) -> list[dict]:
@@ -347,7 +403,7 @@ class QMTBroker(BrokerBase):
     def is_connected(self) -> bool:
         return self.m_connected
 
-    def connect(self) -> bool:
+    def connect(self) -> tuple[bool, str]:
         try:
             from xtquant import xttrader
             from xtquant.xttype import StockAccount
@@ -356,10 +412,10 @@ class QMTBroker(BrokerBase):
             session_id = self.m_xt.create_trader_session(path=path)
             self.m_trader = session_id
             self.m_connected = True
-            return True
+            return True, ""
         except Exception as e:
             logger.error(f"QMT 连接失败: {e}")
-            return False
+            return False, str(e)
 
     def buy(self, symbol: str, price: float, volume: int) -> OrderResult:
         try:
@@ -413,8 +469,8 @@ class SimBroker(BrokerBase):
     def is_connected(self) -> bool:
         return True
 
-    def connect(self) -> bool:
-        return True
+    def connect(self) -> tuple[bool, str]:
+        return True, ""
 
     def buy(self, symbol: str, price: float, volume: int) -> OrderResult:
         from strategy.base import Signal, Direction
@@ -457,7 +513,7 @@ def create_broker(config_path: str = "config/settings.yaml") -> BrokerBase:
     """根据配置创建券商实例"""
     config_file = Path(__file__).parent.parent / config_path
     if config_file.exists():
-        with open(config_file) as f:
+        with open(config_file, encoding="utf-8") as f:
             config = yaml.safe_load(f)
     else:
         config = {}
@@ -469,6 +525,7 @@ def create_broker(config_path: str = "config/settings.yaml") -> BrokerBase:
         return EasyTraderBroker(
             broker_type=broker_config.get("client", "ths"),
             exe_path=broker_config.get("exe_path", ""),
+            cache_ttl=broker_config.get("cache_ttl_seconds", 30),
         )
     elif broker_type == "qmt":
         return QMTBroker(qmt_path=broker_config.get("qmt_path", ""))

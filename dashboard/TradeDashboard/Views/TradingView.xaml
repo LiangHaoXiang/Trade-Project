@@ -75,7 +75,7 @@
             <!-- 左：下单面板 -->
             <Border Grid.Column="0" Style="{StaticResource CardStyle}" Margin="0,0,8,0">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,0,8">
-                <StackPanel Margin="0,8,0,8">
+                <StackPanel Margin="0,8,12,8">
                     <Grid Margin="0,0,0,4">
                         <TextBlock Text="{Binding ModeLabel}" Style="{StaticResource SectionHeaderStyle}"
                                    HorizontalAlignment="Left"/>

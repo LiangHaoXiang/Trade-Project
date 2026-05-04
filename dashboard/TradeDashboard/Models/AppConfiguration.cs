@@ -23,13 +23,7 @@ public class DataConfig
 
 public class StrategyConfig
 {
-    public StrategyDefaults Default { get; set; } = new();
-}
-
-public class StrategyDefaults
-{
-    public int ShortWindow { get; set; } = 5;
-    public int LongWindow { get; set; } = 20;
+    public string SelectedStrategy { get; set; } = "ma_cross";
 }
 
 public class RiskConfig
@@ -54,4 +48,5 @@ public class BrokerConfig
     public string ExePath { get; set; } = "";
     public string QmtPath { get; set; } = "";
     public double MaxSingleOrderAmount { get; set; } = 50000;
+    public bool ConfirmBeforeTrade { get; set; } = true;
 }

@@ -97,6 +97,14 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _versionText = "交易仪表盘 v1.0";
     [ObservableProperty] private string _interactionLog = "";
 
+    partial void OnSelectedTabIndexChanged(int value)
+    {
+        if (value == 2)
+        {
+            _ = Trading.LoadDataAsync();
+        }
+    }
+
     private void OnTradingStatusLog(string message)
     {
         System.Windows.Application.Current.Dispatcher.Invoke(() =>

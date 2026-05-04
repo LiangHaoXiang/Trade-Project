@@ -6,9 +6,11 @@ import json
 import sys
 from dataclasses import asdict
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 
 import json as json_mod
 
@@ -43,12 +45,24 @@ STRATEGY_REGISTRY = {
 logger = get_logger("main")
 
 BROKER_INSTANCE: BrokerBase | None = None
+BROKER_CONFIG_TYPE: str | None = None
 
 
 def _get_broker() -> BrokerBase:
-    global BROKER_INSTANCE
-    if BROKER_INSTANCE is None:
-        BROKER_INSTANCE = create_broker()
+    global BROKER_INSTANCE, BROKER_CONFIG_TYPE
+    config_file = Path(__file__).parent / "config" / "settings.yaml"
+    current_type = "sim"
+    if config_file.exists():
+        with open(config_file, encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+        current_type = cfg.get("broker", {}).get("type", "sim")
+
+    if BROKER_INSTANCE is not None and BROKER_CONFIG_TYPE == current_type:
+        return BROKER_INSTANCE
+
+    logger.info(f"BROKER_CREATE type={current_type} (was={BROKER_CONFIG_TYPE})")
+    BROKER_INSTANCE = create_broker()
+    BROKER_CONFIG_TYPE = current_type
     return BROKER_INSTANCE
 
 
@@ -167,10 +181,11 @@ def main():
 
     elif args.command == "trade-connect":
         broker = _get_broker()
-        success = broker.connect()
+        success, error_msg = broker.connect()
         _output_json({
             "connected": success,
             "broker_type": type(broker).__name__,
+            "error": error_msg,
         })
 
     elif args.command == "trade-disconnect":
