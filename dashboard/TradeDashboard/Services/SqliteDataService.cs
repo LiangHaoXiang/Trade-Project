@@ -142,6 +142,20 @@ public class SqliteDataService : IDataService
         return stocks;
     }
 
+    public async Task<DateTime?> GetLatestTradeDateAsync()
+    {
+        using var conn = new SqliteConnection(m_ConnectionString);
+        await conn.OpenAsync();
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT MAX(date) FROM daily";
+        var result = await cmd.ExecuteScalarAsync();
+        if (result == null || result == DBNull.Value)
+        {
+            return null;
+        }
+        return DateTime.Parse((string)result);
+    }
+
     public async Task<int> SaveBacktestResultAsync(BacktestResult result)
     {
         using var conn = new SqliteConnection(m_ConnectionString);

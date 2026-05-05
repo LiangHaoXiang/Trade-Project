@@ -10,6 +10,7 @@ public interface IDataService
     Task<IReadOnlyList<DailyBar>> GetDailyBarsBeforeAsync(string symbol, string beforeDate, int count);
     Task<IReadOnlyList<string>> GetAvailableSymbolsAsync();
     Task<IReadOnlyList<StockInfo>> GetStockListAsync();
+    Task<DateTime?> GetLatestTradeDateAsync();
 
     // Backtest results
     Task<int> SaveBacktestResultAsync(BacktestResult result);

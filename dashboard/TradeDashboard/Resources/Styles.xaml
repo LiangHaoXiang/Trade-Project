@@ -423,6 +423,86 @@
         <Setter Property="CanUserAddRows" Value="False"/>
         <Setter Property="SelectionMode" Value="Single"/>
         <Setter Property="ColumnWidth" Value="Auto"/>
+        <Style.Resources>
+            <Style TargetType="ScrollViewer">
+                <Setter Property="OverridesDefaultStyle" Value="False"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollViewer">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="6"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <DataGridColumnHeadersPresenter Grid.Column="0" Grid.Row="0"
+                                                                Visibility="{Binding HeadersVisibility, ConverterParameter={x:Static DataGridHeadersVisibility.Column}, Converter={x:Static DataGrid.HeadersVisibilityConverter}, RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                                <ScrollContentPresenter x:Name="PART_ScrollContentPresenter"
+                                                        Grid.Column="0" Grid.Row="1"
+                                                        CanContentScroll="{TemplateBinding CanContentScroll}"/>
+                                <ScrollBar x:Name="PART_VerticalScrollBar" Grid.Column="2" Grid.Row="1"
+                                           Orientation="Vertical" ViewportSize="{TemplateBinding ViewportHeight}"
+                                           Maximum="{TemplateBinding ScrollableHeight}" Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"
+                                           Value="{TemplateBinding VerticalOffset}" Width="6">
+                                    <ScrollBar.Template>
+                                        <ControlTemplate TargetType="ScrollBar">
+                                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                                <Track.Thumb>
+                                                    <Thumb>
+                                                        <Thumb.Template>
+                                                            <ControlTemplate TargetType="Thumb">
+                                                                <Border Background="#45475a" CornerRadius="3" Margin="1"/>
+                                                            </ControlTemplate>
+                                                        </Thumb.Template>
+                                                    </Thumb>
+                                                </Track.Thumb>
+                                            </Track>
+                                        </ControlTemplate>
+                                    </ScrollBar.Template>
+                                </ScrollBar>
+                                <ScrollBar x:Name="PART_HorizontalScrollBar" Grid.Column="0" Grid.Row="2"
+                                           Orientation="Horizontal" ViewportSize="{TemplateBinding ViewportWidth}"
+                                           Maximum="{TemplateBinding ScrollableWidth}" Visibility="{TemplateBinding ComputedHorizontalScrollBarVisibility}"
+                                           Value="{TemplateBinding HorizontalOffset}" Height="6">
+                                    <ScrollBar.Template>
+                                        <ControlTemplate TargetType="ScrollBar">
+                                            <Track x:Name="PART_Track" IsDirectionReversed="False">
+                                                <Track.Thumb>
+                                                    <Thumb>
+                                                        <Thumb.Template>
+                                                            <ControlTemplate TargetType="Thumb">
+                                                                <Border Background="#45475a" CornerRadius="3" Margin="1"/>
+                                                            </ControlTemplate>
+                                                        </Thumb.Template>
+                                                    </Thumb>
+                                                </Track.Thumb>
+                                            </Track>
+                                        </ControlTemplate>
+                                    </ScrollBar.Template>
+                                </ScrollBar>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+            <Style TargetType="DataGridRow">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="Foreground" Value="#cdd6f4"/>
+                <Style.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True">
+                        <Setter Property="Background" Value="#313244"/>
+                    </Trigger>
+                    <Trigger Property="IsSelected" Value="True">
+                        <Setter Property="Background" Value="#45475a"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+        </Style.Resources>
     </Style>
 
     <Style TargetType="DataGridColumnHeader">

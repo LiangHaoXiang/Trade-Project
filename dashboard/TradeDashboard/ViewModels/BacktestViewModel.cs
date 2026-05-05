@@ -27,6 +27,7 @@ public partial class BacktestViewModel : ObservableObject
         m_BacktestService = backtestService;
         m_DataService = dataService;
         _ = LoadFavoriteSymbolsAsync();
+        _ = SetDefaultEndDateAsync();
         RefreshStrategyParams();
     }
 
@@ -168,7 +169,7 @@ public partial class BacktestViewModel : ObservableObject
 
             EquityDataChanged?.Invoke(this, EventArgs.Empty);
 
-            ProgressText = $"回测完成: 收益率 {result.Pnl:+0.00;-0.00}%，交易次数 {result.TradeCount}";
+            ProgressText = $"回测完成: 收益率 {result.PnlPct:+0.00;-0.00}%，交易次数 {result.TradeCount}";
         }
         catch (Exception ex)
         {
@@ -184,6 +185,16 @@ public partial class BacktestViewModel : ObservableObject
     {
         var favs = await m_DataService.GetFavoriteStocksAsync();
         FavoriteSymbols = new ObservableCollection<StockInfo>(favs);
+    }
+
+    private async Task SetDefaultEndDateAsync()
+    {
+        var latestDate = await m_DataService.GetLatestTradeDateAsync();
+        if (latestDate.HasValue)
+        {
+            Parameters.EndDate = latestDate.Value;
+            OnPropertyChanged(nameof(Parameters));
+        }
     }
 
     #endregion

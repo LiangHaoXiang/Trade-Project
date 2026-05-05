@@ -143,7 +143,7 @@ def main():
         if not args.json:
             print_text_summary(report)
         else:
-            _output_json(to_json(report))
+            _output_json(report)
 
         logger.info(f"BACKTEST_COMPLETE final_value={result.final_value} trades={len(result.trades)}")
 
