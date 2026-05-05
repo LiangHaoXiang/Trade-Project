@@ -9,6 +9,7 @@ using SPColor = ScottPlot.Color;
 using SPColors = ScottPlot.Colors;
 
 using TradeDashboard.Models;
+using TradeDashboard.Services;
 using TradeDashboard.ViewModels;
 
 namespace TradeDashboard.Views;
@@ -26,6 +27,14 @@ public partial class MarketDataView : UserControl
     private Point m_LastPanPoint;
     private bool m_DidPan;
 
+    private double m_CumulativeZoomFactor = 1.0;
+    private double m_CumulativePanPixels;
+
+    /** 显示最近的40根k线 */
+    private const int k_LastShowCount = 40;
+    /** 最右侧k线偏移量，例如：2表示偏移2根k线 */
+    private const int k_LeftEdgePadding = 2;
+
     #region 构造函数
 
     public MarketDataView()
@@ -33,6 +42,7 @@ public partial class MarketDataView : UserControl
         InitializeComponent();
         DataContextChanged += OnDataContextChanged;
         Loaded += OnLoaded;
+        IsVisibleChanged += OnVisibleChanged;
     }
 
     #endregion
@@ -92,6 +102,22 @@ public partial class MarketDataView : UserControl
         vm.DataChanged -= OnDataChanged;
         vm.DataChanged += OnDataChanged;
         _ = vm.InitializeAsync();
+    }
+
+    private void OnVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (!(bool)e.NewValue || m_Bars.Count == 0)
+        {
+            return;
+        }
+        if (DataContext is not MarketDataViewModel vm)
+        {
+            return;
+        }
+        var symbol = vm.SelectedStock?.Symbol ?? "—";
+        var limits = PricePlot.Plot.Axes.GetLimits();
+        var visibleRange = limits.Right - limits.Left;
+        InteractionLogService.Write("行情", $"[{symbol}] 行情页激活 可见范围={visibleRange:F0}根 累计缩放={m_CumulativeZoomFactor:F4} 累计偏移={m_CumulativePanPixels:+0;-0}px");
     }
 
     #region 自选股拖拽排序
@@ -342,7 +368,7 @@ public partial class MarketDataView : UserControl
             AddMA(pricePlot, 20, SPColor.FromHex("#89b4fa"));
         }
 
-        // Fit to data
+        // Fit to data then show last 30 bars
         pricePlot.Axes.AutoScale();
 
         // ── Volume chart ──
@@ -362,6 +388,12 @@ public partial class MarketDataView : UserControl
         bars.Color = SPColor.FromHex("#45475a");
 
         volPlot.Axes.AutoScale();
+        
+        // Default: show last ~40 bars on the right
+        var visibleCount = Math.Min(k_LastShowCount, m_Bars.Count);
+        var rightEdge = m_Bars.Count - 1.0 + k_LeftEdgePadding;
+        var leftEdge = rightEdge - visibleCount;
+        PricePlot.Plot.Axes.SetLimitsX(leftEdge, rightEdge);
 
         // Sync X axis of volume to price
         SyncVolumeXAxis();
@@ -370,6 +402,11 @@ public partial class MarketDataView : UserControl
 
         PricePlot.Refresh();
         VolumePlot.Refresh();
+
+        m_CumulativeZoomFactor = 1.0;
+        m_CumulativePanPixels = 0;
+        var symbol = vm.SelectedStock?.Symbol ?? "—";
+        InteractionLogService.Write("行情", $"[{symbol}] 加载完成 本次像素=0px 本次系数=1.00 累计偏移=+0px 累计缩放=1.0000 可见{visibleCount:F0}根");
     }
 
     private void AddMA(Plot plot, int period, ScottPlot.Color color)
@@ -575,6 +612,10 @@ public partial class MarketDataView : UserControl
         UpdateYAxisTicks();
         UpdateXAxisDateLabels();
 
+        var direction = e.Delta > 0 ? "放大" : "缩小";
+        m_CumulativeZoomFactor *= factor;
+        InteractionLogService.Write("行情", $"K线{direction} 本次像素=0px 本次系数={factor:F2} 累计偏移={m_CumulativePanPixels:+0;-0}px 累计缩放={m_CumulativeZoomFactor:F4} 可见{newRange:F0}根");
+
         PricePlot.Refresh();
         VolumePlot.Refresh();
         e.Handled = true;
@@ -653,6 +694,10 @@ public partial class MarketDataView : UserControl
         SyncVolumeXAxis();
         UpdateYAxisTicks();
         UpdateXAxisDateLabels();
+
+        m_CumulativePanPixels += pixelDelta;
+        var panVisibleRange = newRight - newLeft;
+        InteractionLogService.Write("行情", $"K线拖拽 本次像素={pixelDelta:+0.0;-0.0}px 本次系数=1.00 累计偏移={m_CumulativePanPixels:+0;-0}px 累计缩放={m_CumulativeZoomFactor:F4} 可见{panVisibleRange:F0}根");
 
         PricePlot.Refresh();
         VolumePlot.Refresh();
