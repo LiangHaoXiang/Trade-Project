@@ -175,16 +175,29 @@ public partial class MarketDataViewModel : ObservableObject
 
     public async Task MoveFavoriteAsync(int fromIndex, int toIndex)
     {
-        if (fromIndex < 0 || fromIndex >= FavoriteStocks.Count || toIndex < 0 || toIndex >= FavoriteStocks.Count)
+        InteractionLogService.Write("行情", $"MoveFavorite from={fromIndex} to={toIndex} 总数={FavoriteStocks.Count}");
+
+        if (fromIndex < 0 || fromIndex >= FavoriteStocks.Count || toIndex < 0 || toIndex > FavoriteStocks.Count)
         {
+            InteractionLogService.Write("行情", $"MoveFavorite 边界检查失败 跳过");
+            return;
+        }
+
+        if (fromIndex == toIndex)
+        {
+            InteractionLogService.Write("行情", $"MoveFavorite 同位置 跳过");
             return;
         }
 
         var item = FavoriteStocks[fromIndex];
         FavoriteStocks.RemoveAt(fromIndex);
-        FavoriteStocks.Insert(toIndex, item);
+
+        var insertIndex = toIndex > fromIndex ? toIndex - 1 : toIndex;
+        insertIndex = Math.Clamp(insertIndex, 0, FavoriteStocks.Count);
+        FavoriteStocks.Insert(insertIndex, item);
 
         var orderedSymbols = FavoriteStocks.Select(f => f.Symbol).ToList();
+        InteractionLogService.Write("行情", $"MoveFavorite 新顺序: {string.Join(",", orderedSymbols)}");
         await m_DataService.ReorderFavoriteStocksAsync(orderedSymbols);
     }
 

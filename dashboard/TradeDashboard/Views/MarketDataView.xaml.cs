@@ -135,6 +135,7 @@ public partial class MarketDataView : UserControl
 
         m_DragSourceIndex = FavoriteListBox.ItemContainerGenerator.IndexFromContainer(listBoxItem);
         m_DragStartPoint = e.GetPosition(FavoriteListBox);
+        InteractionLogService.Write("行情", $"拖拽开始 选中索引={m_DragSourceIndex}");
     }
 
     private void OnFavoritePreviewMouseMove(object sender, MouseEventArgs e)
@@ -157,7 +158,9 @@ public partial class MarketDataView : UserControl
 
         var stock = vm.FavoriteStocks[m_DragSourceIndex];
         var data = new DataObject(DataFormats.StringFormat, stock.Symbol);
+        InteractionLogService.Write("行情", $"拖拽中 股票={stock.Symbol} DoDragDrop开始");
         DragDrop.DoDragDrop(FavoriteListBox, data, DragDropEffects.Move);
+        InteractionLogService.Write("行情", $"DoDragDrop结束 m_DragSourceIndex={m_DragSourceIndex}");
 
         m_DragSourceIndex = -1;
         m_IsDragging = false;
@@ -227,6 +230,8 @@ public partial class MarketDataView : UserControl
         m_DragSourceIndex = -1;
         m_IsDragging = false;
 
+        InteractionLogService.Write("行情", $"Drop触发 from={fromIndex} target={targetIndex}");
+
         if (fromIndex < 0 || fromIndex == targetIndex) return;
         if (targetIndex > vm.FavoriteStocks.Count) targetIndex = vm.FavoriteStocks.Count;
 
@@ -236,8 +241,6 @@ public partial class MarketDataView : UserControl
     private void OnFavoriteDragLeave(object sender, DragEventArgs e)
     {
         ClearDragInsertIndicators();
-        m_DragSourceIndex = -1;
-        m_IsDragging = false;
     }
 
     private void ClearDragInsertIndicators()
