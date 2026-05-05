@@ -128,21 +128,9 @@
                     </DataGrid>
 
                     <!-- Sim trades DataGrid -->
-                    <DataGrid ItemsSource="{Binding RecentSimOrders}" ColumnWidth="*"
-                              HeadersVisibility="Column">
+                    <DataGrid ItemsSource="{Binding RecentSimOrders}" ColumnWidth="*">
                         <DataGrid.Style>
-                            <Style TargetType="DataGrid">
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="Foreground" Value="#cdd6f4"/>
-                                <Setter Property="BorderThickness" Value="0"/>
-                                <Setter Property="GridLinesVisibility" Value="Horizontal"/>
-                                <Setter Property="HorizontalGridLinesBrush" Value="#313244"/>
-                                <Setter Property="RowBackground" Value="Transparent"/>
-                                <Setter Property="AlternatingRowBackground" Value="#181825"/>
-                                <Setter Property="FontSize" Value="13"/>
-                                <Setter Property="AutoGenerateColumns" Value="False"/>
-                                <Setter Property="IsReadOnly" Value="True"/>
-                                <Setter Property="CanUserAddRows" Value="False"/>
+                            <Style TargetType="DataGrid" BasedOn="{StaticResource {x:Type DataGrid}}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsBacktestMode}" Value="False">
